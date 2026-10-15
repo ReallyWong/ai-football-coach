@@ -49,7 +49,7 @@ Do not vendor entire forks — pin versions; keep adapters in-repo.
 ## Demo script
 
 - EN (X / README voiceover): [docs/demo_script.en.md](docs/demo_script.en.md)
-- 中文口播：`docs/demo_script.zh.md`（秘书）
+- 中文口播：[docs/demo_script.zh.md](docs/demo_script.zh.md)
 
 ## Status
 
