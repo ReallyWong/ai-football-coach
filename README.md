@@ -3,7 +3,7 @@
 > Youth technical correction — camera → pose → ST-GCN++ scoring → coach feedback. No physical robot in v1.
 
 **One-liner (EN)** — _TBD by Grok Bot_  
-**一句话定位（中）** — _待秘书填写_
+**一句话定位（中）** — 用摄像头拍下动作，自动姿态评分并给出青少年技术纠错建议（v1 不上机器人）。详见 [docs/positioning.zh.md](docs/positioning.zh.md)。
 
 ## Product link
 
