@@ -46,6 +46,11 @@ Rules dual-track (geometric + model) + Coach UI  ← this repo (owned IP)
 
 Do not vendor entire forks — pin versions; keep adapters in-repo.
 
+## Demo script
+
+- EN (X / README voiceover): [docs/demo_script.en.md](docs/demo_script.en.md)
+- 中文口播：`docs/demo_script.zh.md`（秘书）
+
 ## Status
 
 | Milestone | Status |
