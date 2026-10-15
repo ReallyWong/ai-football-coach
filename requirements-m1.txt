@@ -1,0 +1,9 @@
+# M1 offline pipeline (geometric path)
+numpy>=1.24
+
+# Optional: video → MediaPipe landmarks (only needed for --video)
+# mediapipe>=0.10
+# opencv-python>=4.8   # or opencv-contrib-python if using MotionDiff-style tooling
+
+# Dev / tests
+pytest>=7.0

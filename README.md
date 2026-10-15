@@ -25,10 +25,11 @@ Rules dual-track (geometric + model) + Coach UI  ← this repo (owned IP)
 |------|------|
 | `labels/` | Football technique taxonomy (`taxonomy.json` v0.2) |
 | `rules/` | Dual-track correction rules (`rules.json` v0.2) |
-| `pipeline/` | Pose schemas, adapter/metric stubs |
+| `pipeline/` | Pose loaders, MP→COCO-17 adapter, geometric metrics, rules engine |
+| `scripts/` | Offline demo (`run_offline_demo.py`) |
 | `docs/pose_contract.md` | COCO-17 topology, MP→COCO map, tensor layouts |
 | `coach-ui/` | Coach feedback UI (scaffold) |
-| `fixtures/` | Sample `POST /analyze` payloads for UI binding |
+| `fixtures/` | Sample analyze payloads + synthetic pose JSON for M1 |
 | `integrations/` | Fork wiring: MotionDiff, pyskl, sports, SoccerNet, RuView |
 | `docs/` | Positioning, architecture |
 
@@ -44,7 +45,7 @@ Do not vendor entire forks — pin versions; keep adapters in-repo.
 
 ## Status
 
-M0 contracts locked: pose, labels, rules, fork wiring. Implementation of exporters / train loops comes later.
+M0 contracts locked. **M1 offline geometric pipeline:** pose JSON → COCO-17 → metrics → rules (`pass.inside.plant_foot`). Run `python scripts/run_offline_demo.py`. ST-GCN++ scoring is M2.
 
 ## License
 
