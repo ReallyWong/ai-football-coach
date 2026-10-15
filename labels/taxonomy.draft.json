@@ -1,5 +1,7 @@
 {
   "version": "0.1.0",
+  "superseded_by": "labels/taxonomy.json",
+  "note": "Draft superseded by taxonomy.json v0.2.0 (M0). Kept for history; do not extend.",
   "scope": "youth-technical-correction",
   "labels": [
     {"id": "pass.inside", "zh": "脚内侧传球", "en": "Inside-foot pass", "joints": ["hip", "knee", "ankle", "shoulder"]},

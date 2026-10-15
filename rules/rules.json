@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "dual_track": {
+    "geometric": "Pose-derived angles / distances from COCO-17 (pipeline/metrics)",
+    "model": "ST-GCN++ class scores or confidence signals — not interchangeable with geometric metrics"
+  },
+  "rules": [
+    {
+      "id": "pass.inside.plant_foot",
+      "label_id": "pass.inside",
+      "from": "geometric",
+      "metric": "plant_foot_angle_deg",
+      "op": "outside",
+      "range": [70, 110],
+      "severity": "warn",
+      "feedback_zh": "支撑脚朝向偏了，尽量指向传球目标方向。",
+      "feedback_en": "Plant foot is off-line — point it toward the pass target."
+    },
+    {
+      "id": "shot.instep.lean",
+      "label_id": "shot.instep",
+      "from": "geometric",
+      "metric": "torso_lean_deg",
+      "op": "gt",
+      "value": 25,
+      "severity": "tip",
+      "feedback_zh": "上身后仰过多，容易打飞；微微前倾压球。",
+      "feedback_en": "Too much back lean — slight forward lean helps keep the shot down."
+    },
+    {
+      "id": "any.low_confidence",
+      "label_id": "*",
+      "from": "model",
+      "signal": "confidence",
+      "op": "lt",
+      "value": 0.35,
+      "severity": "tip",
+      "feedback_zh": "动作置信度偏低，建议换个更清晰的侧面/斜侧面角度再录一段。",
+      "feedback_en": "Low model confidence — try a clearer side or diagonal view and re-record."
+    }
+  ]
+}

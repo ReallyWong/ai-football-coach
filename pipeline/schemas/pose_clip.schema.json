@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ReallyWong/ai-football-coach/pipeline/schemas/pose_clip.schema.json",
+  "title": "PoseClip",
+  "description": "Annotation metadata for one pose clip used by MotionDiff export → COCO-17 → ST-GCN++.",
+  "type": "object",
+  "required": ["label_id", "view", "fps", "T", "V", "keypoints"],
+  "additionalProperties": false,
+  "properties": {
+    "label_id": {
+      "type": "string",
+      "description": "Must match an id in labels/taxonomy.json"
+    },
+    "view": {
+      "type": "string",
+      "enum": ["side", "front", "rear", "diagonal", "unknown"],
+      "description": "Camera view relative to the player"
+    },
+    "fps": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "default": 30
+    },
+    "T": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of frames in the clip window (default 64)"
+    },
+    "V": {
+      "type": "integer",
+      "const": 17,
+      "description": "COCO-17 joint count; must be 17"
+    },
+    "keypoints": {
+      "type": "string",
+      "description": "Path to keypoints array file (layout T×V×C with C=(x,y,conf))"
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "low_confidence": {
+          "type": "boolean",
+          "description": "True if mean joint confidence is below the training threshold"
+        },
+        "occlusion": {
+          "type": "boolean"
+        },
+        "truncated": {
+          "type": "boolean",
+          "description": "True if the action is cut off at clip boundaries"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "exporter": {
+          "type": "string",
+          "description": "e.g. motiondiff-mediapipe"
+        },
+        "video_path": {
+          "type": "string"
+        },
+        "mp_landmarks": {
+          "type": "integer",
+          "const": 33,
+          "description": "If present, confirms MediaPipe-33 was remapped to COCO-17"
+        }
+      }
+    }
+  }
+}
