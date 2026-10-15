@@ -1,0 +1,10 @@
+{
+  "version": "0.1.0",
+  "scope": "youth-technical-correction",
+  "labels": [
+    {"id": "pass.inside", "zh": "脚内侧传球", "en": "Inside-foot pass", "joints": ["hip", "knee", "ankle", "shoulder"]},
+    {"id": "receive.first_touch", "zh": "停球/第一脚", "en": "First touch", "joints": ["ankle", "knee", "hip"]},
+    {"id": "shot.instep", "zh": "正脚背射门", "en": "Instep shot", "joints": ["hip", "knee", "ankle", "torso"]},
+    {"id": "dribble.close", "zh": "近身盘带", "en": "Close control dribble", "joints": ["ankle", "knee", "hip"]}
+  ]
+}

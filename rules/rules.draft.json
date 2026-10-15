@@ -1,0 +1,25 @@
+{
+  "version": "0.1.0",
+  "rules": [
+    {
+      "id": "pass.inside.plant_foot",
+      "label_id": "pass.inside",
+      "metric": "plant_foot_angle_deg",
+      "op": "outside",
+      "range": [70, 110],
+      "severity": "warn",
+      "feedback_zh": "支撑脚朝向偏了，尽量指向传球目标方向。",
+      "feedback_en": "Plant foot is off-line — point it toward the pass target."
+    },
+    {
+      "id": "shot.instep.lean",
+      "label_id": "shot.instep",
+      "metric": "torso_lean_deg",
+      "op": "gt",
+      "value": 25,
+      "severity": "tip",
+      "feedback_zh": "上身后仰过多，容易打飞；微微前倾压球。",
+      "feedback_en": "Too much back lean — slight forward lean helps keep the shot down."
+    }
+  ]
+}
