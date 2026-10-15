@@ -4,8 +4,6 @@
 
 **One-liner (EN)** — Film a skill, get automatic pose scoring and actionable youth technique corrections (no robot in v1). See [docs/positioning.en.md](docs/positioning.en.md).
 **一句话定位（中）** — 用摄像头拍下动作，自动姿态评分并给出青少年技术纠错建议（v1 不上机器人）。详见 [docs/positioning.zh.md](docs/positioning.zh.md)。
-**One-liner (EN)** — Film a skill, get automatic pose scoring and actionable youth technique corrections (no robot in v1). See [docs/positioning.en.md](docs/positioning.en.md).
-**一句话定位（中）** — 用摄像头拍下动作，自动姿态评分并给出青少年技术纠错建议（v1 不上机器人）。详见 [docs/positioning.zh.md](docs/positioning.zh.md)。
 
 ## Product link
 
