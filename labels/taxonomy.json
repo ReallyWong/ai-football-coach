@@ -1,0 +1,66 @@
+{
+  "version": "0.2.0",
+  "scope": "youth-technical-correction",
+  "topology": "coco17",
+  "num_classes": 4,
+  "score_dimensions_default": ["form", "timing", "balance"],
+  "labels": [
+    {
+      "id": "pass.inside",
+      "class_id": 0,
+      "name_zh": "脚内侧传球",
+      "name_en": "Inside-foot pass",
+      "joints": ["hip", "knee", "ankle", "shoulder"],
+      "joint_indices_coco17": [5, 6, 11, 12, 13, 14, 15, 16],
+      "score_dimensions": ["form", "timing", "balance"],
+      "metrics": ["plant_foot_angle_deg"],
+      "clip_hint": {
+        "duration_s": [1.5, 3.0],
+        "view": ["side", "diagonal"]
+      }
+    },
+    {
+      "id": "receive.first_touch",
+      "class_id": 1,
+      "name_zh": "停球/第一脚",
+      "name_en": "First touch",
+      "joints": ["ankle", "knee", "hip"],
+      "joint_indices_coco17": [11, 12, 13, 14, 15, 16],
+      "score_dimensions": ["form", "timing", "balance"],
+      "metrics": [],
+      "clip_hint": {
+        "duration_s": [1.0, 2.5],
+        "view": ["side", "front"]
+      }
+    },
+    {
+      "id": "shot.instep",
+      "class_id": 2,
+      "name_zh": "正脚背射门",
+      "name_en": "Instep shot",
+      "joints": ["hip", "knee", "ankle", "torso"],
+      "joint_indices_coco17": [5, 6, 11, 12, 13, 14, 15, 16],
+      "score_dimensions": ["form", "timing", "balance"],
+      "metrics": ["torso_lean_deg"],
+      "clip_hint": {
+        "duration_s": [1.5, 3.5],
+        "view": ["side", "diagonal"]
+      }
+    },
+    {
+      "id": "dribble.close",
+      "class_id": 3,
+      "name_zh": "近身盘带",
+      "name_en": "Close control dribble",
+      "joints": ["ankle", "knee", "hip"],
+      "joint_indices_coco17": [11, 12, 13, 14, 15, 16],
+      "score_dimensions": ["form", "timing", "balance"],
+      "metrics": [],
+      "clip_hint": {
+        "duration_s": [2.0, 4.0],
+        "view": ["front", "side"]
+      }
+    }
+  ],
+  "future_slots_note": "Driven / lofted pass and other skills may get class_id >= 4 later; do not invent labels until data exists."
+}

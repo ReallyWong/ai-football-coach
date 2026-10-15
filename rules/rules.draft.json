@@ -1,5 +1,7 @@
 {
   "version": "0.1.0",
+  "superseded_by": "rules/rules.json",
+  "note": "Draft superseded by rules.json v0.2.0 (M0). Kept for history; do not extend.",
   "rules": [
     {
       "id": "pass.inside.plant_foot",

@@ -1,0 +1,32 @@
+{
+  "label_id": "pass.inside",
+  "class_id": 0,
+  "confidence": 0.86,
+  "scores": {
+    "form": 84,
+    "timing": 80,
+    "balance": 82,
+    "overall": 82
+  },
+  "topk": [
+    {"label_id": "pass.inside", "class_id": 0, "confidence": 0.86},
+    {"label_id": "receive.first_touch", "class_id": 1, "confidence": 0.08},
+    {"label_id": "shot.instep", "class_id": 2, "confidence": 0.04},
+    {"label_id": "dribble.close", "class_id": 3, "confidence": 0.02}
+  ],
+  "rules_fired": [
+    {
+      "id": "pass.inside.plant_foot",
+      "from": "geometric",
+      "severity": "warn",
+      "feedback_zh": "支撑脚朝向偏了，尽量指向传球目标方向。",
+      "feedback_en": "Plant foot is off-line — point it toward the pass target."
+    }
+  ],
+  "pose": {
+    "topology": "coco17",
+    "T": 64,
+    "V": 17,
+    "fps": 30
+  }
+}
