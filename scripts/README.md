@@ -41,3 +41,22 @@ bash scripts/run_analyze_api.sh
 ```bash
 python -m pytest tests/ -q
 ```
+
+## Synthetic dataset + confusion eval (M3)
+
+```bash
+pip install -r requirements-m2.txt
+pip install matplotlib   # PNG only
+python scripts/generate_synthetic_dataset.py --n-per-class 80
+python scripts/eval_confusion.py
+```
+
+Writes `datasets/youth_football_synth/manifest.jsonl` (+ gitignored `clips/**/*.npy`),
+`reports/confusion_matrix.{json,png}`, `reports/classification_report.md`, and `docs/eval.md`.
+
+Coach UI evidence jump:
+
+```bash
+python -m http.server 8765
+# open http://127.0.0.1:8765/coach-ui/
+```

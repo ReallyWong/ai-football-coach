@@ -19,7 +19,11 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from pipeline.adapters.mediapipe_to_coco17 import mediapipe_to_coco17  # noqa: E402
-from pipeline.metrics.geometric import compute_geometric_metrics  # noqa: E402
+from pipeline.metrics.geometric import (  # noqa: E402
+    compute_geometric_metrics,
+    plant_foot_angle_series,
+    torso_lean_series,
+)
 from pipeline.model.skeleton_probe import (  # noqa: E402
     CLASS_IDS,
     COCO17_V,
@@ -46,8 +50,8 @@ async def _lifespan(_app: FastAPI):
 
 app = FastAPI(
     title="AI Football Coach Analyze API",
-    version="0.2.0",
-    description="M2: ONNX skeleton probe + geometric rules dual-track",
+    version="0.3.0",
+    description="M2/M3: ONNX skeleton probe + geometric rules + evidence frames",
     lifespan=_lifespan,
 )
 
@@ -158,10 +162,16 @@ def analyze_coco17(
         k: v for k, v in metrics_raw.items() if isinstance(v, float) and v == v
     }
     signals = {"confidence": confidence}
+    series_map = {
+        "plant_foot_angle_deg": plant_foot_angle_series(coco17),
+        "torso_lean_deg": torso_lean_series(coco17),
+    }
     triggered = evaluate_rules(
         label_for_rules,
         metrics_for_rules,
         signals=signals,
+        metric_series_map=series_map,
+        fps=fps,
     )
 
     topk = sorted(
@@ -178,21 +188,29 @@ def analyze_coco17(
 
     # Response shape compatible with fixtures/demo_pass_inside.json
     # plus metrics + triggered_rules aliases for the M2 acceptance wording.
-    rules_fired = [
-        {
+    rules_fired = []
+    for r in triggered:
+        item = {
             "id": r["id"],
             "from": r["from"],
             "severity": r.get("severity"),
             "feedback_zh": r.get("feedback_zh"),
             "feedback_en": r.get("feedback_en"),
-            **(
-                {"observed": r["observed"]}
-                if r.get("observed") is not None
-                else {}
-            ),
         }
-        for r in triggered
-    ]
+        if r.get("observed") is not None:
+            item["observed"] = r["observed"]
+        if r.get("metric"):
+            item["metric"] = r["metric"]
+        if r.get("evidence_frame"):
+            item["evidence_frame"] = r["evidence_frame"]
+        rules_fired.append(item)
+
+    # Top-level evidence: first geometric rule with evidence_frame (coach-ui jump)
+    evidence = None
+    for r in rules_fired:
+        if r.get("from") == "geometric" and r.get("evidence_frame"):
+            evidence = dict(r["evidence_frame"])
+            break
 
     return {
         "label_id": label_for_rules,
@@ -205,6 +223,7 @@ def analyze_coco17(
         "metrics": metrics,
         "triggered_rules": rules_fired,
         "rules_fired": rules_fired,  # alias for demo fixture / coach-ui
+        "evidence": evidence,
         "pose": {
             "topology": "coco17",
             "T": int(coco17.shape[0]),

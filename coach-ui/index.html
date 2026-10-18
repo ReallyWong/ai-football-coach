@@ -3,20 +3,336 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Football Coach — UI scaffold</title>
+  <title>AI Football Coach — evidence frames</title>
   <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 720px; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; }
-    .warn { border-left: 4px solid #f59e0b; }
-    .ok { border-left: 4px solid #22c55e; }
-    h1 { font-size: 1.4rem; }
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --text: #e7ecf3;
+      --muted: #8b9bb4;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --accent: #38bdf8;
+      --evidence: #f472b6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      max-width: 880px;
+      margin-inline: auto;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    h1 { font-size: 1.35rem; margin: 0 0 0.25rem; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.25rem; }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+      border: 1px solid #2a3548;
+    }
+    .card.warn { border-left: 4px solid var(--warn); }
+    .card.ok { border-left: 4px solid var(--ok); }
+    .card.evidence { border-left: 4px solid var(--evidence); }
+    .row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+    .scores span {
+      display: inline-block;
+      background: #243044;
+      border-radius: 8px;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.85rem;
+      margin: 0.2rem 0.35rem 0.2rem 0;
+    }
+    button, .btn {
+      background: var(--accent);
+      color: #0b1220;
+      border: none;
+      border-radius: 8px;
+      padding: 0.45rem 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    button.secondary { background: #334155; color: var(--text); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    input[type="range"] { width: min(100%, 420px); accent-color: var(--accent); }
+    #stick {
+      width: 100%;
+      max-width: 360px;
+      height: 280px;
+      background: #0b1220;
+      border-radius: 10px;
+      border: 1px solid #2a3548;
+      display: block;
+    }
+    .frame-meta { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.9rem; }
+    .frame-meta strong { color: var(--evidence); }
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      background: #334155;
+      color: var(--muted);
+      margin-left: 0.35rem;
+    }
+    .badge.hot { background: #831843; color: #fce7f3; }
+    code { font-size: 0.85em; color: #a5b4fc; }
+    a { color: var(--accent); }
+    .err { color: #f87171; }
   </style>
 </head>
 <body>
-  <!-- Later: bind to fixtures/demo_pass_inside.json (POST /analyze response shape). -->
   <h1>AI Football Coach · 青少年技术纠错</h1>
-  <p>Scaffold — wire scores from ST-GCN++ here.</p>
-  <div class="card ok"><strong>脚内侧传球</strong> · 综合 82/100</div>
-  <div class="card warn"><strong>纠错</strong>：支撑脚朝向偏了，尽量指向传球目标方向。</div>
+  <p class="sub">
+    M3 — load analyze-shaped JSON, scrub frames, jump to <strong>evidence</strong>
+    (metric peak / rule fire). Static HTML+JS; no backend required.
+  </p>
+
+  <div class="card">
+    <div class="row">
+      <label>
+        Fixture
+        <select id="fixtureSelect">
+          <option value="../fixtures/demo_analyze_response.json">demo_analyze_response.json</option>
+          <option value="../fixtures/demo_pass_inside.json">demo_pass_inside.json</option>
+        </select>
+      </label>
+      <button type="button" id="reloadBtn" class="secondary">Reload</button>
+      <span id="loadStatus" class="frame-meta"></span>
+    </div>
+  </div>
+
+  <div class="card ok" id="summaryCard">
+    <div><strong id="labelName">—</strong> <span class="badge" id="confBadge">—</span></div>
+    <div class="scores" id="scores"></div>
+  </div>
+
+  <div class="card" id="viewerCard">
+    <div class="row" style="justify-content: space-between;">
+      <span class="frame-meta">
+        Frame <strong id="frameNum">0</strong> / <span id="frameTotal">0</span>
+        · <span id="timestamp">0.000s</span>
+        <span id="evidenceHint" class="badge" hidden>evidence</span>
+      </span>
+      <button type="button" id="jumpEvidence" disabled>Jump to evidence</button>
+    </div>
+    <input type="range" id="scrubber" min="0" max="0" value="0" />
+    <canvas id="stick" width="360" height="280" aria-label="Stick figure pose"></canvas>
+    <p class="frame-meta" id="metricLine">metric: —</p>
+  </div>
+
+  <div id="rulesHost"></div>
+
+  <div class="card">
+    <p class="frame-meta" style="margin:0">
+      Open via a local static server so fixtures load
+      (e.g. <code>python -m http.server 8765</code> from repo root, then
+      <a href="http://127.0.0.1:8765/coach-ui/">/coach-ui/</a>).
+      Or paste JSON below.
+    </p>
+    <textarea id="pasteJson" rows="4" style="width:100%;margin-top:0.5rem;background:#0b1220;color:var(--text);border:1px solid #2a3548;border-radius:8px;padding:0.5rem;font-family:ui-monospace,monospace;font-size:0.8rem;" placeholder='{"label_id":"pass.inside","evidence":{"frame_index":3,...}}'></textarea>
+    <button type="button" id="pasteBtn" class="secondary" style="margin-top:0.5rem">Apply pasted JSON</button>
+  </div>
+
+  <script>
+(function () {
+  const COCO_EDGES = [
+    [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
+    [5, 11], [6, 12], [11, 12],
+    [11, 13], [13, 15], [12, 14], [14, 16],
+    [0, 5], [0, 6],
+  ];
+
+  let state = {
+    data: null,
+    keypoints: null, // T×V×C or null
+    frame: 0,
+    evidenceIndex: null,
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  function evidenceFrom(data) {
+    if (data && data.evidence && typeof data.evidence.frame_index === "number") {
+      return data.evidence;
+    }
+    const rules = (data && (data.rules_fired || data.triggered_rules)) || [];
+    for (const r of rules) {
+      if (r.evidence_frame && typeof r.evidence_frame.frame_index === "number") {
+        return r.evidence_frame;
+      }
+    }
+    return null;
+  }
+
+  function drawStick(frameKp) {
+    const canvas = $("stick");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!frameKp || !frameKp.length) {
+      ctx.fillStyle = "#8b9bb4";
+      ctx.font = "14px system-ui";
+      ctx.fillText("No keypoints in fixture — scrubber shows frame index only.", 16, 40);
+      return;
+    }
+    const xs = frameKp.map((p) => p[0]);
+    const ys = frameKp.map((p) => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const pad = 24;
+    const sx = (canvas.width - 2 * pad) / Math.max(1e-3, maxX - minX);
+    const sy = (canvas.height - 2 * pad) / Math.max(1e-3, maxY - minY);
+    const s = Math.min(sx, sy);
+    const map = (x, y) => [
+      pad + (x - minX) * s,
+      pad + (y - minY) * s,
+    ];
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    for (const [a, b] of COCO_EDGES) {
+      if (!frameKp[a] || !frameKp[b]) continue;
+      const [x0, y0] = map(frameKp[a][0], frameKp[a][1]);
+      const [x1, y1] = map(frameKp[b][0], frameKp[b][1]);
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+    }
+    for (let i = 0; i < frameKp.length; i++) {
+      const [x, y] = map(frameKp[i][0], frameKp[i][1]);
+      ctx.fillStyle = i === 15 || i === 16 ? "#f472b6" : "#e7ecf3";
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function setFrame(i) {
+    const T = state.keypoints
+      ? state.keypoints.length
+      : (state.data && state.data.pose && state.data.pose.T) || 1;
+    state.frame = Math.max(0, Math.min(T - 1, i | 0));
+    $("scrubber").value = String(state.frame);
+    $("frameNum").textContent = String(state.frame);
+    $("frameTotal").textContent = String(Math.max(0, T - 1));
+    const fps = (state.data && state.data.pose && state.data.pose.fps) || 30;
+    $("timestamp").textContent = (state.frame / fps).toFixed(3) + "s";
+    const onEv = state.evidenceIndex != null && state.frame === state.evidenceIndex;
+    $("evidenceHint").hidden = !onEv;
+    if (onEv) $("evidenceHint").classList.add("hot");
+    else $("evidenceHint").classList.remove("hot");
+    const kp = state.keypoints ? state.keypoints[state.frame] : null;
+    drawStick(kp);
+  }
+
+  function render(data) {
+    state.data = data;
+    state.keypoints = null;
+    if (data.keypoints && Array.isArray(data.keypoints)) {
+      state.keypoints = data.keypoints;
+    } else if (data.pose && data.pose.keypoints) {
+      state.keypoints = data.pose.keypoints;
+    }
+
+    const ev = evidenceFrom(data);
+    state.evidenceIndex = ev ? ev.frame_index : null;
+
+    $("labelName").textContent = data.label_id || "unknown";
+    const conf = typeof data.confidence === "number" ? data.confidence : null;
+    $("confBadge").textContent = conf != null ? (conf * 100).toFixed(0) + "% conf" : "—";
+
+    const scores = data.scores || {};
+    $("scores").innerHTML = ["form", "timing", "balance", "overall"]
+      .filter((k) => scores[k] != null)
+      .map((k) => `<span>${k} <strong>${scores[k]}</strong></span>`)
+      .join("");
+
+    const T = state.keypoints
+      ? state.keypoints.length
+      : (data.pose && data.pose.T) || 1;
+    $("scrubber").max = String(Math.max(0, T - 1));
+    $("jumpEvidence").disabled = state.evidenceIndex == null;
+
+    if (ev) {
+      $("metricLine").textContent =
+        `evidence: frame ${ev.frame_index}` +
+        (ev.metric ? ` · ${ev.metric}` : "") +
+        (ev.value != null ? ` = ${Number(ev.value).toFixed(1)}` : "") +
+        (ev.rule_id ? ` · ${ev.rule_id}` : "") +
+        (ev.deviation != null ? ` · deviation ${Number(ev.deviation).toFixed(1)}` : "");
+    } else {
+      $("metricLine").textContent = "No evidence.frame_index in payload — scrub freely.";
+    }
+
+    const rules = data.rules_fired || data.triggered_rules || [];
+    const host = $("rulesHost");
+    host.innerHTML = "";
+    if (!rules.length) {
+      host.innerHTML = `<div class="card ok">No rules fired.</div>`;
+    } else {
+      for (const r of rules) {
+        const div = document.createElement("div");
+        div.className = "card warn";
+        const evBtn =
+          r.evidence_frame && typeof r.evidence_frame.frame_index === "number"
+            ? `<button type="button" data-frame="${r.evidence_frame.frame_index}">Jump to frame ${r.evidence_frame.frame_index}</button>`
+            : "";
+        div.innerHTML = `
+          <div><strong>${r.id || "rule"}</strong>
+            <span class="badge">${r.severity || r.from || ""}</span></div>
+          <div>${r.feedback_zh || ""}</div>
+          <div class="frame-meta">${r.feedback_en || ""}</div>
+          ${evBtn}`;
+        host.appendChild(div);
+      }
+      host.querySelectorAll("button[data-frame]").forEach((btn) => {
+        btn.addEventListener("click", () => setFrame(Number(btn.dataset.frame)));
+      });
+    }
+
+    setFrame(state.evidenceIndex != null ? state.evidenceIndex : 0);
+  }
+
+  async function loadUrl(url) {
+    $("loadStatus").textContent = "Loading…";
+    $("loadStatus").classList.remove("err");
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(res.status + " " + res.statusText);
+      const data = await res.json();
+      render(data);
+      $("loadStatus").textContent = "Loaded " + url;
+    } catch (e) {
+      $("loadStatus").textContent = "Fetch failed (" + e.message + "). Use paste or http.server.";
+      $("loadStatus").classList.add("err");
+    }
+  }
+
+  $("scrubber").addEventListener("input", (e) => setFrame(Number(e.target.value)));
+  $("jumpEvidence").addEventListener("click", () => {
+    if (state.evidenceIndex != null) setFrame(state.evidenceIndex);
+  });
+  $("reloadBtn").addEventListener("click", () => loadUrl($("fixtureSelect").value));
+  $("fixtureSelect").addEventListener("change", () => loadUrl($("fixtureSelect").value));
+  $("pasteBtn").addEventListener("click", () => {
+    try {
+      render(JSON.parse($("pasteJson").value));
+      $("loadStatus").textContent = "Applied pasted JSON";
+      $("loadStatus").classList.remove("err");
+    } catch (e) {
+      $("loadStatus").textContent = "Invalid JSON: " + e.message;
+      $("loadStatus").classList.add("err");
+    }
+  });
+
+  loadUrl($("fixtureSelect").value);
+})();
+  </script>
 </body>
 </html>
