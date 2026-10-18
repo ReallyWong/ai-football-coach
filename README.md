@@ -31,7 +31,11 @@ Rules dual-track (geometric + model) + Coach UI  ← this repo (owned IP)
 | `scripts/` | Offline demo, train/export probe, run API |
 | `docs/pose_contract.md` | COCO-17 topology, MP→COCO map, tensor layouts |
 | `docs/m2_model.md` | Probe ↔ ST-GCN++ swap guide |
-| `coach-ui/` | Coach feedback UI (scaffold) |
+| `docs/eval.md` | M3 synthetic confusion-matrix eval |
+| `docs/ruvview_exploration.md` | RuView docs-only (not v1 path) |
+| `coach-ui/` | Coach feedback UI + evidence-frame jump |
+| `datasets/` | Synthetic COCO-17 clips (manifest committed; `*.npy` gitignored) |
+| `reports/` | Confusion matrix artifacts (M3) |
 | `fixtures/` | Sample analyze payloads + synthetic pose JSON |
 | `integrations/` | Fork wiring: MotionDiff, pyskl, sports, SoccerNet, RuView |
 | `docs/` | Positioning, architecture |
@@ -57,7 +61,8 @@ Do not vendor entire forks — pin versions; keep adapters in-repo.
 |-----------|--------|
 | **M0** contracts | Locked (`taxonomy.json`, `rules.json`, pose contract) |
 | **M1** offline geometric pipeline | Merged — `python scripts/run_offline_demo.py` |
-| **M2** ONNX 4-class probe + `POST /analyze` | **This branch** — synthetic train → ONNX → FastAPI |
+| **M2** ONNX 4-class probe + `POST /analyze` | Merged — synthetic train → ONNX → FastAPI |
+| **M3** synth dataset + eval + evidence UI | **This branch** — ≥80 clips/class, confusion report, coach-ui jump |
 
 ### M2 quickstart
 
@@ -76,6 +81,16 @@ curl -s http://127.0.0.1:8000/analyze \
 ```
 
 See `docs/m2_model.md` for swapping the probe for real ST-GCN++ weights from pyskl.
+
+### M3 quickstart
+
+```bash
+python scripts/generate_synthetic_dataset.py --n-per-class 80
+python scripts/eval_confusion.py
+python -m http.server 8765   # then open /coach-ui/
+```
+
+See `docs/eval.md` and `docs/ruvview_exploration.md`.
 
 ## License
 

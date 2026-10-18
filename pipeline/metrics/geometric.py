@@ -133,3 +133,53 @@ def compute_geometric_metrics(coco17: np.ndarray, **kwargs) -> dict[str, float]:
         "plant_foot_angle_deg": plant_foot_angle_deg(coco17, **kwargs),
         "torso_lean_deg": torso_lean_deg(coco17),
     }
+
+
+def plant_foot_angle_series(
+    coco17: np.ndarray,
+    *,
+    plant_side: str | None = None,
+) -> np.ndarray:
+    """Per-frame plant-foot shin angle, shape (T,). NaN where undefined."""
+    arr = np.asarray(coco17, dtype=np.float64)
+    if arr.ndim != 3 or arr.shape[1] != 17:
+        raise ValueError(f"Expected (T,17,C), got {arr.shape}")
+
+    if plant_side is None:
+        left_c = float(np.nanmean([_conf(f, L_ANK) for f in arr]))
+        right_c = float(np.nanmean([_conf(f, R_ANK) for f in arr]))
+        plant_side = "left" if left_c >= right_c else "right"
+
+    if plant_side == "left":
+        knee_i, ank_i = L_KNEE, L_ANK
+    elif plant_side == "right":
+        knee_i, ank_i = R_KNEE, R_ANK
+    else:
+        raise ValueError("plant_side must be 'left', 'right', or None")
+
+    out = np.full(arr.shape[0], np.nan, dtype=np.float64)
+    for i, frame in enumerate(arr):
+        a = _shin_angle_from_horizontal_deg(_xy(frame, knee_i), _xy(frame, ank_i))
+        if np.isfinite(a):
+            out[i] = a
+    return out
+
+
+def torso_lean_series(coco17: np.ndarray) -> np.ndarray:
+    """Per-frame absolute torso lean from vertical, shape (T,). NaN where undefined."""
+    arr = np.asarray(coco17, dtype=np.float64)
+    if arr.ndim != 3 or arr.shape[1] != 17:
+        raise ValueError(f"Expected (T,17,C), got {arr.shape}")
+
+    out = np.full(arr.shape[0], np.nan, dtype=np.float64)
+    for i, frame in enumerate(arr):
+        mid_sho = (_xy(frame, L_SHO) + _xy(frame, R_SHO)) / 2.0
+        mid_hip = (_xy(frame, L_HIP) + _xy(frame, R_HIP)) / 2.0
+        torso = mid_hip - mid_sho
+        norm = np.linalg.norm(torso)
+        if norm < 1e-8:
+            continue
+        vertical = np.array([0.0, 1.0])
+        cos_a = float(np.clip(np.dot(torso, vertical) / norm, -1.0, 1.0))
+        out[i] = float(np.degrees(np.arccos(cos_a)))
+    return out
