@@ -60,6 +60,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
+    # "*" covers the local coach demo (127.0.0.1:8765 / localhost:8765)
+    # and hosted deploys (Render + GitHub Pages).
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
