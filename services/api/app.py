@@ -15,7 +15,8 @@ from typing import Any
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -57,8 +58,15 @@ async def _lifespan(_app: FastAPI):
 app = FastAPI(
     title="AI Football Coach Analyze API",
     version="0.3.0",
-    description="M2/M3: ONNX skeleton probe + geometric rules + evidence frames",
+    description=(
+        "Youth technique coaching API / 青少年技术纠错 API\n\n"
+        "EN: pose or video → skill label + geometric correction tips + evidence frame.\n"
+        "中文：姿态或视频 → 技术动作类别 + 几何纠错建议 + 证据帧。\n\n"
+        "Friendly docs: `/docs` · Classic Swagger: `/swagger` · OpenAPI: `/openapi.json`"
+    ),
     lifespan=_lifespan,
+    docs_url=None,
+    redoc_url="/redoc",
 )
 
 app.add_middleware(
@@ -70,13 +78,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 @app.get("/", include_in_schema=False)
 def root_redirect():
     return RedirectResponse(url="/coach-ui/")
 
 
-# Static mounts registered after API routes are defined (see bottom of file).
+_STATIC = Path(__file__).resolve().parent / "static"
+if _STATIC.is_dir():
+    app.mount("/docs-static", StaticFiles(directory=str(_STATIC)), name="docs-static")
+
+
+@app.get("/docs", response_class=HTMLResponse, include_in_schema=False)
+def bilingual_docs() -> HTMLResponse:
+    """Human-friendly bilingual API docs (not raw Swagger)."""
+    page = _STATIC / "api_docs.html"
+    if not page.is_file():
+        raise HTTPException(status_code=404, detail="api_docs.html missing")
+    return HTMLResponse(page.read_text(encoding="utf-8"))
+
+
+@app.get("/swagger", include_in_schema=False)
+def classic_swagger():
+    return get_swagger_ui_html(openapi_url="/openapi.json", title="AI Football Coach · Swagger")
+
+
+# Coach-ui and fixtures mounts are registered after API routes (see bottom of file).
 
 _session = None
 _onnx_path: Path | None = None
@@ -113,11 +139,11 @@ class AnalyzeRequest(BaseModel):
     pose_path: str | None = None
     topology: str | None = Field(
         default=None,
-        description="coco17 | mediapipe33 — inferred from V if omitted",
+        description="coco17 | mediapipe33 (EN/中文: topology; inferred from V if omitted)",
     )
     label_id: str | None = Field(
         default=None,
-        description="Optional hint; if omitted, model argmax is used for rules",
+        description="Optional skill hint / 可选技术动作提示; else model argmax",
     )
     fps: float = 30.0
     T: int | None = None
@@ -259,7 +285,7 @@ def analyze_coco17(
     }
 
 
-@app.get("/health")
+@app.get("/health", summary="Health / 健康检查", tags=["core"])
 def health() -> dict[str, Any]:
     path = Path(
         __import__("os").environ.get("AIFC_ONNX_PATH", str(DEFAULT_ONNX))
@@ -274,7 +300,7 @@ def health() -> dict[str, Any]:
     }
 
 
-@app.post("/analyze")
+@app.post("/analyze", summary="Analyze pose JSON / 分析姿态 JSON", tags=["core"])
 def analyze(body: AnalyzeRequest) -> dict[str, Any]:
     try:
         if body.keypoints is not None:
@@ -305,7 +331,11 @@ def analyze(body: AnalyzeRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.post("/analyze/video")
+@app.post(
+    "/analyze/video",
+    summary="Analyze uploaded video / 上传视频分析",
+    tags=["core"],
+)
 async def analyze_video(
     file: UploadFile = File(..., description="Short training clip (mp4/webm/mov)"),
     label_id: str | None = Form(default=None),
