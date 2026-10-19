@@ -12,6 +12,9 @@ from typing import Any
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -54,6 +57,21 @@ app = FastAPI(
     description="M2/M3: ONNX skeleton probe + geometric rules + evidence frames",
     lifespan=_lifespan,
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/", include_in_schema=False)
+def root_redirect():
+    return RedirectResponse(url="/coach-ui/")
+
+
+# Static mounts registered after API routes are defined (see bottom of file).
 
 _session = None
 _onnx_path: Path | None = None
@@ -278,3 +296,12 @@ def analyze(body: AnalyzeRequest) -> dict[str, Any]:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+# Serve coach UI + fixtures (Docker / Render). Mounts last so API routes take precedence.
+_FIXTURES = REPO_ROOT / "fixtures"
+_COACH_UI = REPO_ROOT / "coach-ui"
+if _FIXTURES.is_dir():
+    app.mount("/fixtures", StaticFiles(directory=str(_FIXTURES)), name="fixtures")
+if _COACH_UI.is_dir():
+    app.mount("/coach-ui", StaticFiles(directory=str(_COACH_UI), html=True), name="coach-ui")
