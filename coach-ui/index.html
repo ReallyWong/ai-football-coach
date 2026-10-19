@@ -3,218 +3,262 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Football Coach · 青少年技术纠错</title>
+  <title>AI Football Coach</title>
   <style>
     :root {
-      --bg: #0b1220;
-      --card: #152033;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --ok: #22c55e;
-      --warn: #f59e0b;
-      --accent: #38bdf8;
-      --pink: #f472b6;
-      --line: #243247;
+      --bg: #0b1220; --card: #152033; --text: #f1f5f9; --muted: #94a3b8;
+      --ok: #22c55e; --warn: #f59e0b; --accent: #38bdf8; --pink: #f472b6; --line: #243247;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: "Segoe UI", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
       background: radial-gradient(1200px 600px at 10% -10%, #1e3a5f 0%, transparent 55%),
-                  radial-gradient(900px 500px at 100% 0%, #3b1d4a 0%, transparent 50%),
-                  var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      min-height: 100vh;
+                  radial-gradient(900px 500px at 100% 0%, #3b1d4a 0%, transparent 50%), var(--bg);
+      color: var(--text); line-height: 1.5; min-height: 100vh;
     }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
-    header { margin-bottom: 1.25rem; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 1.25rem 1.15rem 3rem; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .lang { display: inline-flex; background: #1e293b; border-radius: 999px; padding: 0.15rem; border: 1px solid var(--line); }
+    .lang button {
+      border: none; background: transparent; color: var(--muted); padding: 0.35rem 0.75rem;
+      border-radius: 999px; cursor: pointer; font-weight: 650; font-family: inherit;
+    }
+    .lang button.on { background: var(--accent); color: #0b1220; }
     .eyebrow {
-      display: inline-block;
-      font-size: 0.75rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--accent);
-      background: rgba(56,189,248,0.12);
-      border: 1px solid rgba(56,189,248,0.35);
-      border-radius: 999px;
-      padding: 0.2rem 0.65rem;
-      margin-bottom: 0.65rem;
+      display: inline-block; font-size: 0.75rem; color: var(--accent);
+      background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.35);
+      border-radius: 999px; padding: 0.2rem 0.65rem; margin-bottom: 0.55rem;
     }
-    h1 { font-size: clamp(1.45rem, 3vw, 1.9rem); margin: 0 0 0.4rem; font-weight: 720; }
-    .lead { color: var(--muted); margin: 0; max-width: 42rem; }
-    .hero-actions { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-top: 1rem; }
+    h1 { font-size: clamp(1.4rem, 3vw, 1.85rem); margin: 0 0 0.35rem; }
+    .lead { color: var(--muted); margin: 0; max-width: 40rem; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 0.9rem; }
     button, .btn {
-      appearance: none;
-      border: none;
-      border-radius: 10px;
-      padding: 0.7rem 1.15rem;
-      font-weight: 650;
-      font-size: 0.95rem;
-      cursor: pointer;
-      font-family: inherit;
+      appearance: none; border: none; border-radius: 10px; padding: 0.65rem 1.05rem;
+      font-weight: 650; font-size: 0.92rem; cursor: pointer; font-family: inherit;
     }
     .primary { background: linear-gradient(135deg, #38bdf8, #818cf8); color: #0b1220; }
-    .primary:hover { filter: brightness(1.05); }
     .secondary { background: #243247; color: var(--text); }
     .ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
     button:disabled { opacity: 0.45; cursor: not-allowed; }
-    .grid {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 1rem;
-      margin-top: 1.25rem;
+    .upload {
+      margin-top: 1rem; border: 2px dashed #334155; border-radius: 16px; padding: 1.1rem 1.2rem;
+      background: rgba(15,23,42,0.55); text-align: center; transition: border-color .15s, background .15s;
     }
+    .upload.drag { border-color: var(--accent); background: rgba(56,189,248,0.08); }
+    .upload h2 { margin: 0 0 0.35rem; font-size: 1.05rem; }
+    .upload p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+    .upload input[type=file] { margin-top: 0.75rem; color: var(--muted); max-width: 100%; }
+    .upload .hint { margin-top: 0.45rem; font-size: 0.8rem; color: #64748b; }
+    .grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 1rem; margin-top: 1.1rem; }
     @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
     .card {
-      background: rgba(21,32,51,0.92);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 1.1rem 1.2rem;
-      backdrop-filter: blur(8px);
+      background: rgba(21,32,51,0.92); border: 1px solid var(--line); border-radius: 16px; padding: 1.05rem 1.15rem;
     }
-    .card h2 { font-size: 1rem; margin: 0 0 0.75rem; color: var(--muted); font-weight: 600; }
+    .card h2 { font-size: 0.95rem; margin: 0 0 0.7rem; color: var(--muted); font-weight: 600; }
     .tip {
       border-left: 4px solid var(--warn);
       background: linear-gradient(90deg, rgba(245,158,11,0.12), transparent);
-      padding: 1rem 1.1rem;
-      border-radius: 12px;
-      margin-bottom: 0.85rem;
+      padding: 0.95rem 1rem; border-radius: 12px; margin-bottom: 0.8rem;
     }
     .tip.ok { border-left-color: var(--ok); background: linear-gradient(90deg, rgba(34,197,94,0.12), transparent); }
-    .tip .zh { font-size: 1.15rem; font-weight: 700; margin: 0 0 0.25rem; }
-    .tip .en { color: var(--muted); margin: 0; font-size: 0.92rem; }
-    .label-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
-    .pill {
-      display: inline-flex; align-items: center; gap: 0.35rem;
-      background: #1e293b; border-radius: 999px; padding: 0.3rem 0.7rem; font-size: 0.85rem;
-    }
+    .tip .main { font-size: 1.12rem; font-weight: 700; margin: 0 0 0.2rem; }
+    .tip .sub { color: var(--muted); margin: 0; font-size: 0.9rem; }
+    .label-row { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.7rem; }
+    .pill { background: #1e293b; border-radius: 999px; padding: 0.28rem 0.65rem; font-size: 0.84rem; }
     .pill strong { color: var(--accent); }
-    .scores { display: flex; flex-wrap: wrap; gap: 0.45rem; }
-    .score {
-      background: #0f172a; border: 1px solid var(--line); border-radius: 10px;
-      padding: 0.45rem 0.65rem; min-width: 4.5rem; text-align: center;
-    }
-    .score b { display: block; font-size: 1.15rem; }
-    .score span { color: var(--muted); font-size: 0.75rem; }
-    canvas#stick {
-      width: 100%; height: auto; max-height: 320px;
-      background: #0a101c; border-radius: 12px; border: 1px solid var(--line); display: block;
-    }
-    .controls { display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center; margin: 0.75rem 0 0.35rem; }
-    input[type="range"] { flex: 1; min-width: 140px; accent-color: var(--accent); }
-    .meta { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+    .scores { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .score { background: #0f172a; border: 1px solid var(--line); border-radius: 10px; padding: 0.4rem 0.6rem; min-width: 4.4rem; text-align: center; }
+    .score b { display: block; font-size: 1.1rem; }
+    .score span { color: var(--muted); font-size: 0.72rem; }
+    canvas#stick { width: 100%; max-height: 320px; background: #0a101c; border-radius: 12px; border: 1px solid var(--line); display: block; }
+    .controls { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.7rem; }
+    input[type=range] { flex: 1; accent-color: var(--accent); }
+    .meta { color: var(--muted); font-size: 0.84rem; margin: 0.35rem 0 0; font-variant-numeric: tabular-nums; }
     .meta em { color: var(--pink); font-style: normal; font-weight: 700; }
-    .howto { color: var(--muted); font-size: 0.9rem; }
-    .howto ol { margin: 0.4rem 0 0; padding-left: 1.2rem; }
-    .status { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
-    .status.err { color: #f87171; }
-    .status.ok { color: var(--ok); }
-    details.advanced {
-      margin-top: 1rem; border: 1px dashed var(--line); border-radius: 12px; padding: 0.75rem 1rem;
-      color: var(--muted); font-size: 0.88rem;
-    }
+    .status { font-size: 0.88rem; color: var(--muted); min-height: 1.25em; margin-top: 0.65rem; }
+    .status.err { color: #f87171; } .status.ok { color: var(--ok); }
+    .select-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: center; margin-top: 0.75rem; }
+    select { background: #0f172a; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 0.4rem 0.55rem; }
+    details.advanced { margin-top: 1rem; border: 1px dashed var(--line); border-radius: 12px; padding: 0.7rem 1rem; color: var(--muted); font-size: 0.86rem; }
     details.advanced summary { cursor: pointer; color: var(--text); font-weight: 600; }
-    textarea {
-      width: 100%; margin-top: 0.5rem; background: #0a101c; color: var(--text);
-      border: 1px solid var(--line); border-radius: 8px; padding: 0.5rem;
-      font-family: ui-monospace, Consolas, monospace; font-size: 0.78rem;
-    }
-    a { color: var(--accent); }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
-      <div class="eyebrow">Demo · v1 不上机器人</div>
-      <h1>AI Football Coach</h1>
-      <p class="lead">拍下动作 → 自动识别技术动作 → 给出青少年能听懂的纠错建议。下面点一次就能看演示。</p>
-      <div class="hero-actions">
-        <button type="button" class="primary" id="btnDemo">一键看演示（支撑脚纠错）</button>
-        <button type="button" class="secondary" id="btnLive" title="需要本机 API 已启动">用本机 API 再分析一次</button>
-        <button type="button" class="ghost" id="btnJump" disabled>跳到问题帧</button>
+    <div class="topbar">
+      <div class="eyebrow" data-i18n="eyebrow">Demo · no robot in v1</div>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" id="langZh" class="on">中文</button>
+        <button type="button" id="langEn">EN</button>
       </div>
-      <p class="status" id="status">准备好了。点「一键看演示」开始。</p>
+    </div>
+    <header>
+      <h1 data-i18n="title">AI Football Coach</h1>
+      <p class="lead" data-i18n="lead">Upload a short training clip or try the sample. We estimate pose, score the skill, and give a correction tip.</p>
+      <div class="hero-actions">
+        <button type="button" class="primary" id="btnDemo" data-i18n="btnDemo">Try sample (plant foot)</button>
+        <button type="button" class="ghost" id="btnJump" disabled data-i18n="btnJump">Jump to problem frame</button>
+      </div>
     </header>
+
+    <section class="upload" id="dropzone">
+      <h2 data-i18n="uploadTitle">Upload your video</h2>
+      <p data-i18n="uploadDesc">MP4 / MOV / WebM · ideally side or diagonal view · keep it under ~15s</p>
+      <div class="select-row">
+        <label>
+          <span data-i18n="skillLabel">Skill (optional)</span>
+          <select id="skillSelect">
+            <option value="">Auto</option>
+            <option value="pass.inside">pass.inside</option>
+            <option value="receive.first_touch">receive.first_touch</option>
+            <option value="shot.instep">shot.instep</option>
+            <option value="dribble.close">dribble.close</option>
+          </select>
+        </label>
+        <input type="file" id="fileInput" accept="video/mp4,video/webm,video/quicktime,video/*" />
+        <button type="button" class="secondary" id="btnAnalyze" disabled data-i18n="btnAnalyze">Analyze video</button>
+      </div>
+      <p class="hint" data-i18n="uploadHint">Runs on your computer via local API (MediaPipe). First run may take a minute.</p>
+    </section>
+    <p class="status" id="status"></p>
 
     <div class="grid">
       <section class="card">
-        <h2>教练反馈</h2>
+        <h2 data-i18n="feedbackTitle">Coach feedback</h2>
         <div class="tip" id="tipCard">
-          <p class="zh" id="tipZh">还没有结果。点上面的绿色按钮。</p>
-          <p class="en" id="tipEn"></p>
+          <p class="main" id="tipMain" data-i18n="tipEmpty">No result yet — upload a clip or try the sample.</p>
+          <p class="sub" id="tipSub"></p>
         </div>
         <div class="label-row">
-          <span class="pill">识别动作 <strong id="actionName">—</strong></span>
-          <span class="pill">把握 <strong id="confPct">—</strong></span>
+          <span class="pill"><span data-i18n="action">Action</span> <strong id="actionName">—</strong></span>
+          <span class="pill"><span data-i18n="confidence">Confidence</span> <strong id="confPct">—</strong></span>
         </div>
         <div class="scores" id="scores"></div>
-        <div class="howto">
-          <ol>
-            <li>看左侧/上方的火柴人姿势</li>
-            <li>粉色关节点是脚踝（支撑脚相关）</li>
-            <li>拖动滑条回看每一帧，或点「跳到问题帧」</li>
-          </ol>
-        </div>
       </section>
-
       <section class="card">
-        <h2>动作回放</h2>
-        <canvas id="stick" width="420" height="320" aria-label="姿态火柴人"></canvas>
-        <div class="controls">
-          <input type="range" id="scrubber" min="0" max="0" value="0" />
-        </div>
-        <p class="meta">第 <em id="frameNum">0</em> 帧 · <span id="timestamp">0.00s</span> · <span id="metricLine">—</span></p>
+        <h2 data-i18n="replayTitle">Pose replay</h2>
+        <canvas id="stick" width="420" height="320"></canvas>
+        <div class="controls"><input type="range" id="scrubber" min="0" max="0" value="0" /></div>
+        <p class="meta"><span data-i18n="frame">Frame</span> <em id="frameNum">0</em> · <span id="timestamp">0.00s</span> · <span id="metricLine">—</span></p>
       </section>
     </div>
 
     <details class="advanced">
-      <summary>给开发者看的高级选项（可忽略）</summary>
-      <p>你刚才打开的 <code>/docs</code> 是 API 说明书，不是产品界面。日常请用本页。</p>
-      <p>
-        Fixture：
-        <select id="fixtureSelect">
-          <option value="../fixtures/demo_analyze_response.json">完整演示 JSON</option>
-          <option value="../fixtures/demo_pass_inside.json">轻量矫正卡</option>
-        </select>
-        <button type="button" class="secondary" id="reloadBtn" style="margin-left:0.35rem">Reload</button>
-      </p>
-      <textarea id="pasteJson" rows="3" placeholder="也可粘贴 POST /analyze 返回的 JSON"></textarea>
-      <button type="button" class="secondary" id="pasteBtn" style="margin-top:0.45rem">应用粘贴的 JSON</button>
+      <summary data-i18n="advanced">Developer options</summary>
+      <p data-i18n="advancedNote">The /docs page is API reference, not the product UI.</p>
     </details>
   </div>
 
   <script>
 (function () {
-  const LABEL_ZH = {
-    "pass.inside": "脚内侧传球",
-    "receive.first_touch": "停球 / 第一脚处理",
-    "shot.instep": "脚背射门",
-    "dribble.close": "近身运球",
-  };
-  const SCORE_ZH = { form: "姿态", timing: "时机", balance: "平衡", overall: "综合" };
-  const COCO_EDGES = [
-    [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
-    [5, 11], [6, 12], [11, 12],
-    [11, 13], [13, 15], [12, 14], [14, 16],
-    [0, 5], [0, 6],
-  ];
   const API = "http://127.0.0.1:8000";
+  const I18N = {
+    zh: {
+      eyebrow: "演示 · v1 不上机器人",
+      title: "AI Football Coach",
+      lead: "上传一段训练视频，或先看样例。我们会估计姿态、识别技术动作，并给出可执行的纠错建议。",
+      btnDemo: "先看样例（支撑脚）",
+      btnJump: "跳到问题帧",
+      uploadTitle: "上传你的视频",
+      uploadDesc: "支持 MP4 / MOV / WebM · 最好侧面或斜侧面 · 建议 15 秒以内",
+      skillLabel: "技术动作（可选）",
+      btnAnalyze: "开始分析",
+      uploadHint: "在本机 API 上跑（MediaPipe）。第一次可能要等一两分钟。",
+      feedbackTitle: "教练反馈",
+      tipEmpty: "还没有结果 — 请上传视频，或先点样例。",
+      tipOk: "这一脚看起来没问题，继续保持。",
+      action: "识别动作",
+      confidence: "把握",
+      replayTitle: "姿态回放",
+      frame: "第",
+      advanced: "开发者选项",
+      advancedNote: "浏览器里的 /docs 是 API 说明书，不是产品界面。",
+      statusReady: "选好视频后点「开始分析」。",
+      statusDemo: "样例已加载。可拖动滑条，或跳到问题帧。",
+      statusUploading: "正在上传并分析，请稍候…",
+      statusDone: "分析完成。",
+      statusNeedFile: "请先选择视频文件。",
+      statusApiFail: "分析失败：",
+      plantMetric: "支撑脚角度",
+      labels: {
+        "pass.inside": "脚内侧传球",
+        "receive.first_touch": "停球 / 第一脚",
+        "shot.instep": "脚背射门",
+        "dribble.close": "近身运球",
+      },
+      scores: { form: "姿态", timing: "时机", balance: "平衡", overall: "综合" },
+    },
+    en: {
+      eyebrow: "Demo · no robot in v1",
+      title: "AI Football Coach",
+      lead: "Upload a short training clip, or try the sample. We estimate pose, score the skill, and give a correction tip.",
+      btnDemo: "Try sample (plant foot)",
+      btnJump: "Jump to problem frame",
+      uploadTitle: "Upload your video",
+      uploadDesc: "MP4 / MOV / WebM · side or diagonal view · keep it under ~15s",
+      skillLabel: "Skill (optional)",
+      btnAnalyze: "Analyze video",
+      uploadHint: "Runs on your computer via local API (MediaPipe). First run may take a minute.",
+      feedbackTitle: "Coach feedback",
+      tipEmpty: "No result yet — upload a clip or try the sample.",
+      tipOk: "Looks fine — keep it up.",
+      action: "Action",
+      confidence: "Confidence",
+      replayTitle: "Pose replay",
+      frame: "Frame",
+      advanced: "Developer options",
+      advancedNote: "The /docs page is API reference, not the product UI.",
+      statusReady: "Pick a video, then hit Analyze.",
+      statusDemo: "Sample loaded. Scrub or jump to the problem frame.",
+      statusUploading: "Uploading and analyzing…",
+      statusDone: "Analysis complete.",
+      statusNeedFile: "Please choose a video file first.",
+      statusApiFail: "Analysis failed: ",
+      plantMetric: "Plant-foot angle",
+      labels: {
+        "pass.inside": "Inside pass",
+        "receive.first_touch": "First touch",
+        "shot.instep": "Instep shot",
+        "dribble.close": "Close dribble",
+      },
+      scores: { form: "Form", timing: "Timing", balance: "Balance", overall: "Overall" },
+    },
+  };
 
+  let lang = localStorage.getItem("aifc_lang") || "zh";
   let state = { data: null, keypoints: null, frame: 0, evidenceIndex: null };
+  let selectedFile = null;
   const $ = (id) => document.getElementById(id);
+  const t = () => I18N[lang];
+
+  const COCO_EDGES = [
+    [5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16],[0,5],[0,6],
+  ];
+
+  function applyI18n() {
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const key = el.getAttribute("data-i18n");
+      if (t()[key] != null) el.textContent = t()[key];
+    });
+    $("langZh").classList.toggle("on", lang === "zh");
+    $("langEn").classList.toggle("on", lang === "en");
+    // refresh tip/action texts from current data
+    if (state.data) render(state.data);
+    else setStatus(t().statusReady);
+  }
 
   function setStatus(msg, kind) {
     const el = $("status");
-    el.textContent = msg;
+    el.textContent = msg || "";
     el.className = "status" + (kind ? " " + kind : "");
   }
 
   function evidenceFrom(data) {
-    if (data && data.evidence && typeof data.evidence.frame_index === "number") return data.evidence;
-    const rules = (data && (data.rules_fired || data.triggered_rules)) || [];
-    for (const r of rules) {
-      if (r.evidence_frame && typeof r.evidence_frame.frame_index === "number") return r.evidence_frame;
+    if (data?.evidence?.frame_index != null) return data.evidence;
+    for (const r of (data?.rules_fired || data?.triggered_rules || [])) {
+      if (r.evidence_frame?.frame_index != null) return r.evidence_frame;
     }
     return null;
   }
@@ -223,147 +267,142 @@
     const canvas = $("stick");
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (!frameKp || !frameKp.length) {
+    if (!frameKp?.length) {
       ctx.fillStyle = "#94a3b8";
       ctx.font = "15px system-ui";
-      ctx.fillText("暂无姿态关键节点 — 仍可看纠错文案", 24, 48);
+      ctx.fillText(lang === "zh" ? "暂无姿态关键节点" : "No keypoints yet", 24, 48);
       return;
     }
-    const xs = frameKp.map((p) => p[0]);
-    const ys = frameKp.map((p) => p[1]);
+    const xs = frameKp.map((p) => p[0]), ys = frameKp.map((p) => p[1]);
     const minX = Math.min(...xs), maxX = Math.max(...xs);
     const minY = Math.min(...ys), maxY = Math.max(...ys);
     const pad = 28;
-    const sx = (canvas.width - 2 * pad) / Math.max(1e-3, maxX - minX);
-    const sy = (canvas.height - 2 * pad) / Math.max(1e-3, maxY - minY);
-    const s = Math.min(sx, sy);
-    const map = (x, y) => [pad + (x - minX) * s, pad + (y - minY) * s];
-    ctx.strokeStyle = "#38bdf8";
-    ctx.lineWidth = 3.5;
-    ctx.lineCap = "round";
-    for (const [a, b] of COCO_EDGES) {
+    const s = Math.min((canvas.width - 2*pad)/Math.max(1e-3,maxX-minX), (canvas.height-2*pad)/Math.max(1e-3,maxY-minY));
+    const map = (x,y) => [pad+(x-minX)*s, pad+(y-minY)*s];
+    ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 3.5; ctx.lineCap = "round";
+    for (const [a,b] of COCO_EDGES) {
       if (!frameKp[a] || !frameKp[b]) continue;
-      const [x0, y0] = map(frameKp[a][0], frameKp[a][1]);
-      const [x1, y1] = map(frameKp[b][0], frameKp[b][1]);
-      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      const [x0,y0]=map(frameKp[a][0],frameKp[a][1]);
+      const [x1,y1]=map(frameKp[b][0],frameKp[b][1]);
+      ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
     }
-    for (let i = 0; i < frameKp.length; i++) {
-      const [x, y] = map(frameKp[i][0], frameKp[i][1]);
-      ctx.fillStyle = (i === 15 || i === 16) ? "#f472b6" : "#e2e8f0";
-      ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI * 2); ctx.fill();
+    for (let i=0;i<frameKp.length;i++) {
+      const [x,y]=map(frameKp[i][0],frameKp[i][1]);
+      ctx.fillStyle = (i===15||i===16) ? "#f472b6" : "#e2e8f0";
+      ctx.beginPath(); ctx.arc(x,y,4.5,0,Math.PI*2); ctx.fill();
     }
   }
 
   function setFrame(i) {
-    const T = state.keypoints ? state.keypoints.length : (state.data && state.data.pose && state.data.pose.T) || 1;
-    state.frame = Math.max(0, Math.min(T - 1, i | 0));
+    const T = state.keypoints ? state.keypoints.length : (state.data?.pose?.T || 1);
+    state.frame = Math.max(0, Math.min(T-1, i|0));
     $("scrubber").value = String(state.frame);
     $("frameNum").textContent = String(state.frame);
-    const fps = (state.data && state.data.pose && state.data.pose.fps) || 30;
+    const fps = state.data?.pose?.fps || 30;
     $("timestamp").textContent = (state.frame / fps).toFixed(2) + "s";
     drawStick(state.keypoints ? state.keypoints[state.frame] : null);
   }
 
   function render(data) {
     state.data = data;
-    state.keypoints = null;
-    if (data.keypoints && Array.isArray(data.keypoints)) state.keypoints = data.keypoints;
-    else if (data.pose && data.pose.keypoints) state.keypoints = data.pose.keypoints;
-
+    state.keypoints = data.keypoints || data.pose?.keypoints || null;
     const ev = evidenceFrom(data);
     state.evidenceIndex = ev ? ev.frame_index : null;
     $("btnJump").disabled = state.evidenceIndex == null;
 
     const lid = data.label_id || "unknown";
-    $("actionName").textContent = LABEL_ZH[lid] || lid;
+    $("actionName").textContent = t().labels[lid] || lid;
     const conf = typeof data.confidence === "number" ? data.confidence : null;
-    $("confPct").textContent = conf != null ? Math.round(conf * 100) + "%" : "—";
+    $("confPct").textContent = conf != null ? Math.round(conf*100) + "%" : "—";
 
     const scores = data.scores || {};
-    $("scores").innerHTML = ["form", "timing", "balance", "overall"]
-      .filter((k) => scores[k] != null)
-      .map((k) => `<div class="score"><b>${scores[k]}</b><span>${SCORE_ZH[k] || k}</span></div>`)
-      .join("");
+    $("scores").innerHTML = ["form","timing","balance","overall"].filter(k=>scores[k]!=null)
+      .map(k => `<div class="score"><b>${scores[k]}</b><span>${t().scores[k]}</span></div>`).join("");
 
     const rules = data.rules_fired || data.triggered_rules || [];
     const tip = $("tipCard");
     if (rules.length) {
       tip.className = "tip";
-      $("tipZh").textContent = rules[0].feedback_zh || "发现可改进点";
-      $("tipEn").textContent = rules[0].feedback_en || "";
+      const r = rules[0];
+      $("tipMain").textContent = lang === "zh" ? (r.feedback_zh || r.feedback_en || "") : (r.feedback_en || r.feedback_zh || "");
+      $("tipSub").textContent = lang === "zh" ? (r.feedback_en || "") : (r.feedback_zh || "");
     } else {
       tip.className = "tip ok";
-      $("tipZh").textContent = "这一脚看起来没问题，继续保持。";
-      $("tipEn").textContent = "No correction rules fired.";
+      $("tipMain").textContent = t().tipOk;
+      $("tipSub").textContent = "";
     }
 
     if (ev) {
-      $("metricLine").textContent =
-        (ev.metric === "plant_foot_angle_deg" ? "支撑脚角度" : (ev.metric || "指标")) +
-        (ev.value != null ? " " + Number(ev.value).toFixed(0) + "°" : "") +
-        " · 问题帧 " + ev.frame_index;
-    } else {
-      $("metricLine").textContent = "无问题帧标记";
-    }
+      const metric = ev.metric === "plant_foot_angle_deg" ? t().plantMetric : (ev.metric || "");
+      $("metricLine").textContent = metric + (ev.value!=null ? ` ${Number(ev.value).toFixed(0)}°` : "") + ` · #${ev.frame_index}`;
+    } else $("metricLine").textContent = "—";
 
-    const T = state.keypoints ? state.keypoints.length : (data.pose && data.pose.T) || 1;
-    $("scrubber").max = String(Math.max(0, T - 1));
+    const T = state.keypoints ? state.keypoints.length : (data.pose?.T || 1);
+    $("scrubber").max = String(Math.max(0, T-1));
     setFrame(state.evidenceIndex != null ? state.evidenceIndex : 0);
   }
 
-  async function loadUrl(url) {
-    setStatus("加载演示数据…");
+  async function loadSample() {
+    setStatus(lang==="zh"?"加载样例…":"Loading sample…");
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(res.status + " " + res.statusText);
+      const res = await fetch("../fixtures/demo_analyze_response.json");
+      if (!res.ok) throw new Error(res.statusText);
       render(await res.json());
-      setStatus("演示已加载。拖动滑条或点「跳到问题帧」。", "ok");
+      setStatus(t().statusDemo, "ok");
     } catch (e) {
-      setStatus("加载失败：" + e.message + "。请确认静态服务在 8765 端口。", "err");
+      setStatus(t().statusApiFail + e.message, "err");
     }
   }
 
-  async function analyzeLive() {
-    setStatus("正在调用本机 API…");
+  async function analyzeFile(file) {
+    if (!file) { setStatus(t().statusNeedFile, "err"); return; }
+    setStatus(t().statusUploading);
+    $("btnAnalyze").disabled = true;
+    const fd = new FormData();
+    fd.append("file", file);
+    const skill = $("skillSelect").value;
+    if (skill) fd.append("label_id", skill);
+    fd.append("max_frames", "120");
     try {
-      const res = await fetch(API + "/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pose_path: "fixtures/demo_pass_inside_pose.json",
-          label_id: "pass.inside",
-        }),
-      });
-      if (!res.ok) throw new Error(res.status + " " + (await res.text()));
-      const data = await res.json();
-      // Live response may lack keypoints; keep stick from fixture if needed
-      if (!data.keypoints && state.keypoints) data.keypoints = state.keypoints;
+      const res = await fetch(API + "/analyze/video", { method: "POST", body: fd });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { detail: text }; }
+      if (!res.ok) throw new Error(data.detail || res.statusText);
       render(data);
-      setStatus("本机 API 分析完成。", "ok");
+      setStatus(t().statusDone, "ok");
     } catch (e) {
-      setStatus("API 不可用（" + e.message + "）。仍可用「一键看演示」看本地样例。", "err");
+      setStatus(t().statusApiFail + e.message, "err");
+    } finally {
+      $("btnAnalyze").disabled = !selectedFile;
     }
   }
 
-  $("btnDemo").addEventListener("click", () => loadUrl("../fixtures/demo_analyze_response.json"));
-  $("btnLive").addEventListener("click", analyzeLive);
-  $("btnJump").addEventListener("click", () => {
-    if (state.evidenceIndex != null) setFrame(state.evidenceIndex);
-  });
-  $("scrubber").addEventListener("input", (e) => setFrame(Number(e.target.value)));
-  $("reloadBtn").addEventListener("click", () => loadUrl($("fixtureSelect").value));
-  $("fixtureSelect").addEventListener("change", () => loadUrl($("fixtureSelect").value));
-  $("pasteBtn").addEventListener("click", () => {
-    try {
-      render(JSON.parse($("pasteJson").value));
-      setStatus("已应用粘贴的 JSON。", "ok");
-    } catch (e) {
-      setStatus("JSON 无效：" + e.message, "err");
-    }
+  $("langZh").onclick = () => { lang = "zh"; localStorage.setItem("aifc_lang", lang); applyI18n(); };
+  $("langEn").onclick = () => { lang = "en"; localStorage.setItem("aifc_lang", lang); applyI18n(); };
+  $("btnDemo").onclick = loadSample;
+  $("btnJump").onclick = () => { if (state.evidenceIndex != null) setFrame(state.evidenceIndex); };
+  $("scrubber").oninput = (e) => setFrame(Number(e.target.value));
+  $("fileInput").onchange = (e) => {
+    selectedFile = e.target.files && e.target.files[0];
+    $("btnAnalyze").disabled = !selectedFile;
+    if (selectedFile) setStatus((lang==="zh"?"已选择：":"Selected: ") + selectedFile.name);
+  };
+  $("btnAnalyze").onclick = () => analyzeFile(selectedFile);
+
+  const dz = $("dropzone");
+  ["dragenter","dragover"].forEach(ev => dz.addEventListener(ev, (e)=>{e.preventDefault(); dz.classList.add("drag");}));
+  ["dragleave","drop"].forEach(ev => dz.addEventListener(ev, (e)=>{e.preventDefault(); dz.classList.remove("drag");}));
+  dz.addEventListener("drop", (e) => {
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!f) return;
+    selectedFile = f;
+    $("fileInput").files = e.dataTransfer.files;
+    $("btnAnalyze").disabled = false;
+    setStatus((lang==="zh"?"已选择：":"Selected: ") + f.name);
   });
 
-  // Auto-load friendly demo on open
-  loadUrl("../fixtures/demo_analyze_response.json");
+  applyI18n();
 })();
   </script>
 </body>

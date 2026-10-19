@@ -6,12 +6,14 @@ GET  /health   — liveness + model path
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -36,6 +38,7 @@ from pipeline.model.skeleton_probe import (  # noqa: E402
     preprocess_tvx_to_nctv,
 )
 from pipeline.pose.load_mediapipe_json import load_mediapipe_json  # noqa: E402
+from pipeline.pose.video_to_mp33 import video_to_mp33  # noqa: E402
 from pipeline.rules_engine import evaluate_rules  # noqa: E402
 
 DEFAULT_ONNX = REPO_ROOT / "models" / "youth_football_probe.onnx"
@@ -251,6 +254,8 @@ def analyze_coco17(
             "fps": fps,
             "model_T": DEFAULT_T,
         },
+        # For coach-ui stick figure (finite coords; NaN → 0 for JSON)
+        "keypoints": np.nan_to_num(coco17, nan=0.0).tolist(),
     }
 
 
@@ -298,6 +303,39 @@ def analyze(body: AnalyzeRequest) -> dict[str, Any]:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/analyze/video")
+async def analyze_video(
+    file: UploadFile = File(..., description="Short training clip (mp4/webm/mov)"),
+    label_id: str | None = Form(default=None),
+    max_frames: int = Form(default=120),
+) -> dict[str, Any]:
+    """Upload a video → MediaPipe pose → same analyze payload as /analyze."""
+    suffix = Path(file.filename or "clip.mp4").suffix.lower() or ".mp4"
+    if suffix not in {".mp4", ".webm", ".mov", ".avi", ".mkv"}:
+        raise HTTPException(status_code=400, detail=f"Unsupported video type: {suffix}")
+    tmp_dir = Path(tempfile.mkdtemp(prefix="aifc_vid_"))
+    dest = tmp_dir / f"upload{suffix}"
+    try:
+        with dest.open("wb") as out:
+            shutil.copyfileobj(file.file, out)
+        try:
+            mp33, fps = video_to_mp33(dest, max_frames=max(16, min(int(max_frames), 240)))
+        except ImportError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        coco = _to_coco17(mp33, "mediapipe33")
+        result = analyze_coco17(coco, label_id_hint=label_id or None, fps=fps)
+        result["source"] = {"type": "video", "filename": file.filename, "fps": fps}
+        return result
+    except HTTPException:
+        raise
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 # Serve coach UI + fixtures (Docker / Render). Mounts last so API routes take precedence.
