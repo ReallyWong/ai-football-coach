@@ -6,6 +6,7 @@ GET  /health   — liveness + model path
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import json
 import shutil
 import sys
 import tempfile
@@ -366,6 +367,65 @@ async def analyze_video(
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def _load_signature_catalog() -> dict[str, Any]:
+    path = REPO_ROOT / "labels" / "signature_moves.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_signature_rules() -> dict[str, Any]:
+    path = REPO_ROOT / "rules" / "signature_rules.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+@app.get("/modes", summary="List product modes / 产品模式", tags=["product"])
+def list_modes() -> dict[str, Any]:
+    return {
+        "modes": [
+            {
+                "id": "fundamentals",
+                "name_zh": "基础技术纠错",
+                "name_en": "Youth fundamentals",
+                "status": "live",
+                "api": ["/analyze", "/analyze/video"],
+            },
+            {
+                "id": "signature_move",
+                "name_zh": "球星招牌动作",
+                "name_en": "Signature Move",
+                "status": "preseed",
+                "api": ["/signature-moves"],
+                "hook_zh": "从马赛回旋、牛尾巴、踩单车开始练——小孩本来就在学球星。",
+                "hook_en": "Train Marseille turn, elastico, step-overs — kids copy stars first.",
+            },
+        ]
+    }
+
+
+@app.get(
+    "/signature-moves",
+    summary="Signature Move catalog / 招牌动作目录",
+    tags=["product"],
+)
+def signature_moves() -> dict[str, Any]:
+    catalog = _load_signature_catalog()
+    rules = _load_signature_rules()
+    by_label: dict[str, list] = {}
+    for r in rules.get("rules", []):
+        by_label.setdefault(r.get("label_id") or "", []).append(r)
+    moves = []
+    for m in catalog.get("moves", []):
+        item = dict(m)
+        item["rules"] = by_label.get(m["id"], []) + by_label.get("sig.*", [])
+        moves.append(item)
+    return {
+        "version": catalog.get("version"),
+        "status": catalog.get("status"),
+        "hook_zh": catalog.get("product_hook_zh"),
+        "hook_en": catalog.get("product_hook_en"),
+        "moves": moves,
+    }
 
 
 # Serve coach UI + fixtures (Docker / Render). Mounts last so API routes take precedence.

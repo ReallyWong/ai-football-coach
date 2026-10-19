@@ -96,12 +96,17 @@
     <header>
       <h1 data-i18n="title">AI Football Coach</h1>
       <p class="lead" data-i18n="lead">Upload a short training clip or try the sample. We estimate pose, score the skill, and give a correction tip.</p>
+      <div class="mode-toggle" role="group" aria-label="Mode">
+        <button type="button" id="modeFund" class="on" data-i18n="modeFund">基础技术</button>
+        <button type="button" id="modeSig" data-i18n="modeSig">球星招牌动作</button>
+      </div>
       <div class="hero-actions">
         <button type="button" class="primary" id="btnDemo" data-i18n="btnDemo">Try sample (plant foot)</button>
         <button type="button" class="ghost" id="btnJump" disabled data-i18n="btnJump">Jump to problem frame</button>
       </div>
     </header>
 
+    <div id="panelFund">
     <section class="upload" id="dropzone">
       <h2 data-i18n="uploadTitle">Upload your video</h2>
       <p data-i18n="uploadDesc">MP4 / MOV / WebM · ideally side or diagonal view · keep it under ~15s</p>
@@ -144,6 +149,19 @@
       </section>
     </div>
 
+    
+    </div>
+    <section id="panelSig" class="card" style="margin-top:1rem">
+      <h2 data-i18n="sigTitle">Signature Move · 球星招牌动作</h2>
+      <p class="lead" id="sigHook" style="margin:.25rem 0 .5rem"></p>
+      <p class="tiny" data-i18n="sigNote">预埋目录：先选动作看要点；模型识别稍后接上，不占用现有四类基础动作。</p>
+      <div class="sig-grid" id="sigGrid"></div>
+      <div class="tip" id="sigTip" style="margin-top:1rem">
+        <p class="main" id="sigTipMain" data-i18n="sigPick">点一张卡片，看球星动作怎么练。</p>
+        <p class="sub" id="sigTipSub"></p>
+      </div>
+    </section>
+
     <details class="advanced">
       <summary data-i18n="advanced">Developer options</summary>
       <p data-i18n="advancedNote">The /docs page is API reference, not the product UI.</p>
@@ -158,6 +176,11 @@
       eyebrow: "演示 · v1 不上机器人",
       title: "AI Football Coach",
       lead: "上传一段训练视频，或先看样例。我们会估计姿态、识别技术动作，并给出可执行的纠错建议。",
+      modeFund: "基础技术",
+      modeSig: "球星招牌动作",
+      sigTitle: "球星招牌动作",
+      sigNote: "预埋目录：先选动作看要点；识别模型稍后接上。",
+      sigPick: "点一张卡片，看球星动作怎么练。",
       btnDemo: "先看样例（支撑脚）",
       btnJump: "跳到问题帧",
       uploadTitle: "上传你的视频",
@@ -193,6 +216,11 @@
       eyebrow: "Demo · no robot in v1",
       title: "AI Football Coach",
       lead: "Upload a short training clip, or try the sample. We estimate pose, score the skill, and give a correction tip.",
+      modeFund: "Fundamentals",
+      modeSig: "Signature Moves",
+      sigTitle: "Signature Moves",
+      sigNote: "Preseed catalog: pick a move for cues; recognition model comes later.",
+      sigPick: "Tap a card to see how to train the move.",
       btnDemo: "Try sample (plant foot)",
       btnJump: "Jump to problem frame",
       uploadTitle: "Upload your video",
@@ -235,6 +263,51 @@
   const COCO_EDGES = [
     [5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16],[0,5],[0,6],
   ];
+
+
+  async function loadSignatureMoves() {
+    try {
+      const res = await fetch(API + "/signature-moves");
+      const data = await res.json();
+      $("sigHook").textContent = lang === "zh" ? (data.hook_zh || "") : (data.hook_en || "");
+      const grid = $("sigGrid");
+      grid.innerHTML = "";
+      for (const m of (data.moves || [])) {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "sig-card";
+        card.innerHTML = `<h3>${lang==="zh"?m.name_zh:m.name_en}</h3>
+          <p>${lang==="zh"?m.cue_zh:m.cue_en}</p>
+          <div class="stars">${(m.star_flavor||[]).join(" · ")}</div>`;
+        card.onclick = () => {
+          grid.querySelectorAll(".sig-card").forEach(c => c.classList.remove("on"));
+          card.classList.add("on");
+          const rules = m.rules || [];
+          const tip = rules[0];
+          $("sigTipMain").textContent = lang==="zh" ? (m.cue_zh||"") : (m.cue_en||"");
+          $("sigTipSub").textContent = tip
+            ? (lang==="zh" ? (tip.feedback_zh||tip.feedback_en||"") : (tip.feedback_en||tip.feedback_zh||""))
+            : ((m.aka||[]).join(" / "));
+          setStatus((lang==="zh"?"已选择：":"Selected: ") + (lang==="zh"?m.name_zh:m.name_en), "ok");
+        };
+        grid.appendChild(card);
+      }
+    } catch (e) {
+      $("sigHook").textContent = (lang==="zh"?"目录加载失败：":"Catalog failed: ") + e.message;
+    }
+  }
+
+  function setMode(mode) {
+    document.body.classList.toggle("mode-sig", mode === "sig");
+    $("modeFund").classList.toggle("on", mode === "fund");
+    $("modeSig").classList.toggle("on", mode === "sig");
+    localStorage.setItem("aifc_mode", mode);
+    if (mode === "sig") loadSignatureMoves();
+    else setStatus(t().statusReady);
+  }
+
+  $("modeFund").onclick = () => setMode("fund");
+  $("modeSig").onclick = () => setMode("sig");
 
   function applyI18n() {
     document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
@@ -378,8 +451,8 @@
     }
   }
 
-  $("langZh").onclick = () => { lang = "zh"; localStorage.setItem("aifc_lang", lang); applyI18n(); };
-  $("langEn").onclick = () => { lang = "en"; localStorage.setItem("aifc_lang", lang); applyI18n(); };
+  $("langZh").onclick = () => { lang = "zh"; localStorage.setItem("aifc_lang", lang); applyI18n(); if (document.body.classList.contains("mode-sig")) loadSignatureMoves(); };
+  $("langEn").onclick = () => { lang = "en"; localStorage.setItem("aifc_lang", lang); applyI18n(); if (document.body.classList.contains("mode-sig")) loadSignatureMoves(); };
   $("btnDemo").onclick = loadSample;
   $("btnJump").onclick = () => { if (state.evidenceIndex != null) setFrame(state.evidenceIndex); };
   $("scrubber").oninput = (e) => setFrame(Number(e.target.value));
@@ -403,6 +476,7 @@
   });
 
   applyI18n();
+  setMode(localStorage.getItem("aifc_mode") === "sig" ? "sig" : "fund");
 })();
   </script>
 </body>
