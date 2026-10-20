@@ -1,46 +1,46 @@
-# 30 秒 Demo 口播（中文）— 用于录屏 / README / 国内渠道
+# 60–90 秒 Demo 口播（中文）— coach-ui 演示模式
 
-对应英文版：`docs/demo_script.en.md`（Grok Bot）。按 M2 路径录屏即可。
+对应英文版：`docs/demo_script.en.md`。英雄路径是 **coach-ui 里的「演示模式」**，不需要终端，也不需要 MediaPipe。GitHub Pages 与 Render 上都能点。
 
-## 一口气版（≈30 秒，短视频 / 朋友圈）
+## 一口气版（≈30 秒，可嵌在长录屏开头）
 
 青少年踢球缺的不是再看一遍比赛回放，而是：「这一脚哪里不对？」
 
-看：我们载入一段姿态，打出技术评分，立刻给出教练提示——
+看：演示模式载入一段脚内侧传球，打出技术评分，立刻给出教练提示——
 
-「支撑脚朝向偏了，请指向传球目标。」
+「支撑脚朝向偏了，尽量指向传球目标方向。」
 
-这就是 AI Football Coach：摄像头 → 姿态 → 评分 → 纠错。v1 不上机器人。Demo 见 README。
+跳到问题帧，能看见这一下偏在哪一帧。这就是 AI Football Coach：姿态 → 评分 → 纠错。v1 不上机器人。
 
-## 稍长版（≈45 秒，README / 路演）
+## 画面节拍（60–90 秒，按点击录）
 
-1. **钩子** — 青训要的是改下一次触球，不是堆更多录像。
-2. **演示** — `POST /analyze` 对传球片段返回动作类别、置信度，以及几何纠错规则。
-3. **证据** — 触发提示：*支撑脚朝向偏了，请指向传球目标。*
-4. **收束** — 自研层是标签、规则和 Coach UI；ST-GCN++ 权重可后换。对外叙事：Football Match Intelligence / AI football coach。
+打开 [coach-ui](https://reallywong.github.io/ai-football-coach/coach-ui/)（或 Render 的 `/coach-ui/`）。浏览器全屏，不要露出终端。
 
-## 画面节拍
+| 时间 | 画面 | 操作 |
+|------|------|------|
+| 0–8s | 大标题「这一脚哪里不对？」 | 停一下，让字幕读完 |
+| 8–18s | 模拟训练片段，火柴人在循环；默认「脚内侧传球」 | 点 **演示模式** |
+| 18–22s | 片段停住，反馈区出现 | 点 **分析这段** |
+| 22–28s | 「正在分析…」进度 | 不要切走 |
+| 28–45s | 教练提示「支撑脚朝向偏了…」、评分、把握 | 指一下提示原文 |
+| 45–58s | 姿态回放跳到高亮的问题帧，角度和偏离写在时间轴下 | 点 **跳到问题帧** |
+| 58–68s | 「这一脚 / 纠正后」两张卡片（纠正后是示意） | 扫一眼即可 |
+| 68–80s | 可切「正脚背射门」再点一次「分析这段」（上身后仰） | 可选 |
+| 80–90s | 招牌动作目录：马赛回旋等，角标是「预置」 | 点 **看看招牌动作**，再点马赛回旋 |
 
-| 节拍 | 画面 |
-|------|------|
-| 0–5s | README 一句话或 coach-ui 卡片 |
-| 5–15s | 终端：启动 API + `curl` `/analyze` |
-| 15–25s | 高亮 `triggered_rules[].feedback_zh`（或同款支撑脚提示） |
-| 25–30s | 仓库链接 + 「v1 不上机器人」 |
+收束一句：自研层是标签、规则和 Coach UI；v1 不上机器人。
 
-## 命令（可复制）
+## 录屏前
+
+- 用无痕窗口，避免上次停在「球星招牌动作」。
+- 页面语言选中文。缩放约 110%，暗色背景即可。
+- **不要**打开 `/docs`，那是 API 说明书。
+- **不要**指望上传视频：Pages 和 Render 没有 MediaPipe。上传区的黄字就是这个意思。
+- 本机只要静态服务，不必启 API：
 
 ```bash
-bash scripts/run_analyze_api.sh
-curl -s http://127.0.0.1:8000/analyze \
-  -H 'Content-Type: application/json' \
-  -d '{"pose_path":"fixtures/demo_pass_inside_pose.json","label_id":"pass.inside"}'
-```
-
-离线（不启 API）：
-
-```bash
-python scripts/run_offline_demo.py
+python -m http.server 8765
+# 打开 http://127.0.0.1:8765/coach-ui/
 ```
 
 ## 短视频轻 CTA
@@ -48,3 +48,11 @@ python scripts/run_offline_demo.py
 配短片软提问：*公开搭建中——青训教练，支撑脚之后你最想先要哪条提示？*
 
 首发 demo **不要**硬推「私信谈投资」。
+
+## 可选：本机真视频（不是英雄路径）
+
+只有本机安装了 MediaPipe 并启动 API 时，上传才会走 `POST /analyze/video`。演示模式不依赖它。
+
+```bash
+bash scripts/run_analyze_api.sh
+```
