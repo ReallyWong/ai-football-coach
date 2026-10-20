@@ -95,3 +95,7 @@ See `docs/eval.md` and `docs/ruvview_exploration.md`.
 ## License
 
 MIT
+
+## Cloud agent demo
+
+This pull request was opened by a Cursor cloud agent via Grok Bot as a walkthrough on 2026-10-20. It is documentation only and can be closed or merged freely.
