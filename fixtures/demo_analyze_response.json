@@ -1,4 +1,16 @@
 {
+  "demo": {
+    "scenario_id": "pass.inside",
+    "title_zh": "脚内侧传球",
+    "title_en": "Inside-foot pass",
+    "view_zh": "斜侧面 · 触球窗口",
+    "view_en": "Diagonal · contact window",
+    "badge_zh": "模拟片段",
+    "badge_en": "Simulated clip",
+    "after_zh": "纠正后：支撑脚指向传球目标，髋部稳住再出球。下一脚可以再录一段对比。",
+    "after_en": "After correction: plant foot points at the pass target, hips stay quiet. Record the next touch to compare.",
+    "after_placeholder": true
+  },
   "label_id": "pass.inside",
   "class_id": 0,
   "confidence": 0.9999748468399048,
