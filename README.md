@@ -50,6 +50,11 @@ Rules dual-track (geometric + model) + Coach UI  ← this repo (owned IP)
 
 Do not vendor entire forks — pin versions; keep adapters in-repo.
 
+## Modes
+
+- **Fundamentals** (live): youth technique correction — `/analyze`, `/analyze/video`
+- **Signature Move** (preseed): star moves catalog — [docs/signature_moves.md](docs/signature_moves.md), `GET /signature-moves`
+
 ## Demo script
 
 - EN (X / README voiceover): [docs/demo_script.en.md](docs/demo_script.en.md)

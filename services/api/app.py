@@ -6,14 +6,18 @@ GET  /health   — liveness + model path
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import json
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -36,6 +40,7 @@ from pipeline.model.skeleton_probe import (  # noqa: E402
     preprocess_tvx_to_nctv,
 )
 from pipeline.pose.load_mediapipe_json import load_mediapipe_json  # noqa: E402
+from pipeline.pose.video_to_mp33 import video_to_mp33  # noqa: E402
 from pipeline.rules_engine import evaluate_rules  # noqa: E402
 
 DEFAULT_ONNX = REPO_ROOT / "models" / "youth_football_probe.onnx"
@@ -54,24 +59,51 @@ async def _lifespan(_app: FastAPI):
 app = FastAPI(
     title="AI Football Coach Analyze API",
     version="0.3.0",
-    description="M2/M3: ONNX skeleton probe + geometric rules + evidence frames",
+    description=(
+        "Youth technique coaching API / 青少年技术纠错 API\n\n"
+        "EN: pose or video → skill label + geometric correction tips + evidence frame.\n"
+        "中文：姿态或视频 → 技术动作类别 + 几何纠错建议 + 证据帧。\n\n"
+        "Friendly docs: `/docs` · Classic Swagger: `/swagger` · OpenAPI: `/openapi.json`"
+    ),
     lifespan=_lifespan,
+    docs_url=None,
+    redoc_url="/redoc",
 )
 
 app.add_middleware(
     CORSMiddleware,
+    # "*" covers the local coach demo (127.0.0.1:8765 / localhost:8765)
+    # and hosted deploys (Render + GitHub Pages).
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 @app.get("/", include_in_schema=False)
 def root_redirect():
     return RedirectResponse(url="/coach-ui/")
 
 
-# Static mounts registered after API routes are defined (see bottom of file).
+_STATIC = Path(__file__).resolve().parent / "static"
+if _STATIC.is_dir():
+    app.mount("/docs-static", StaticFiles(directory=str(_STATIC)), name="docs-static")
+
+
+@app.get("/docs", response_class=HTMLResponse, include_in_schema=False)
+def bilingual_docs() -> HTMLResponse:
+    """Human-friendly bilingual API docs (not raw Swagger)."""
+    page = _STATIC / "api_docs.html"
+    if not page.is_file():
+        raise HTTPException(status_code=404, detail="api_docs.html missing")
+    return HTMLResponse(page.read_text(encoding="utf-8"))
+
+
+@app.get("/swagger", include_in_schema=False)
+def classic_swagger():
+    return get_swagger_ui_html(openapi_url="/openapi.json", title="AI Football Coach · Swagger")
+
+
+# Coach-ui and fixtures mounts are registered after API routes (see bottom of file).
 
 _session = None
 _onnx_path: Path | None = None
@@ -108,11 +140,11 @@ class AnalyzeRequest(BaseModel):
     pose_path: str | None = None
     topology: str | None = Field(
         default=None,
-        description="coco17 | mediapipe33 — inferred from V if omitted",
+        description="coco17 | mediapipe33 (EN/中文: topology; inferred from V if omitted)",
     )
     label_id: str | None = Field(
         default=None,
-        description="Optional hint; if omitted, model argmax is used for rules",
+        description="Optional skill hint / 可选技术动作提示; else model argmax",
     )
     fps: float = 30.0
     T: int | None = None
@@ -249,10 +281,12 @@ def analyze_coco17(
             "fps": fps,
             "model_T": DEFAULT_T,
         },
+        # For coach-ui stick figure (finite coords; NaN → 0 for JSON)
+        "keypoints": np.nan_to_num(coco17, nan=0.0).tolist(),
     }
 
 
-@app.get("/health")
+@app.get("/health", summary="Health / 健康检查", tags=["core"])
 def health() -> dict[str, Any]:
     path = Path(
         __import__("os").environ.get("AIFC_ONNX_PATH", str(DEFAULT_ONNX))
@@ -267,7 +301,7 @@ def health() -> dict[str, Any]:
     }
 
 
-@app.post("/analyze")
+@app.post("/analyze", summary="Analyze pose JSON / 分析姿态 JSON", tags=["core"])
 def analyze(body: AnalyzeRequest) -> dict[str, Any]:
     try:
         if body.keypoints is not None:
@@ -296,6 +330,102 @@ def analyze(body: AnalyzeRequest) -> dict[str, Any]:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post(
+    "/analyze/video",
+    summary="Analyze uploaded video / 上传视频分析",
+    tags=["core"],
+)
+async def analyze_video(
+    file: UploadFile = File(..., description="Short training clip (mp4/webm/mov)"),
+    label_id: str | None = Form(default=None),
+    max_frames: int = Form(default=120),
+) -> dict[str, Any]:
+    """Upload a video → MediaPipe pose → same analyze payload as /analyze."""
+    suffix = Path(file.filename or "clip.mp4").suffix.lower() or ".mp4"
+    if suffix not in {".mp4", ".webm", ".mov", ".avi", ".mkv"}:
+        raise HTTPException(status_code=400, detail=f"Unsupported video type: {suffix}")
+    tmp_dir = Path(tempfile.mkdtemp(prefix="aifc_vid_"))
+    dest = tmp_dir / f"upload{suffix}"
+    try:
+        with dest.open("wb") as out:
+            shutil.copyfileobj(file.file, out)
+        try:
+            mp33, fps = video_to_mp33(dest, max_frames=max(16, min(int(max_frames), 240)))
+        except ImportError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        coco = _to_coco17(mp33, "mediapipe33")
+        result = analyze_coco17(coco, label_id_hint=label_id or None, fps=fps)
+        result["source"] = {"type": "video", "filename": file.filename, "fps": fps}
+        return result
+    except HTTPException:
+        raise
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def _load_signature_catalog() -> dict[str, Any]:
+    path = REPO_ROOT / "labels" / "signature_moves.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_signature_rules() -> dict[str, Any]:
+    path = REPO_ROOT / "rules" / "signature_rules.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+@app.get("/modes", summary="List product modes / 产品模式", tags=["product"])
+def list_modes() -> dict[str, Any]:
+    return {
+        "modes": [
+            {
+                "id": "fundamentals",
+                "name_zh": "基础技术纠错",
+                "name_en": "Youth fundamentals",
+                "status": "live",
+                "api": ["/analyze", "/analyze/video"],
+            },
+            {
+                "id": "signature_move",
+                "name_zh": "球星招牌动作",
+                "name_en": "Signature Move",
+                "status": "preseed",
+                "api": ["/signature-moves"],
+                "hook_zh": "从马赛回旋、牛尾巴、踩单车开始练——小孩本来就在学球星。",
+                "hook_en": "Train Marseille turn, elastico, step-overs — kids copy stars first.",
+            },
+        ]
+    }
+
+
+@app.get(
+    "/signature-moves",
+    summary="Signature Move catalog / 招牌动作目录",
+    tags=["product"],
+)
+def signature_moves() -> dict[str, Any]:
+    catalog = _load_signature_catalog()
+    rules = _load_signature_rules()
+    by_label: dict[str, list] = {}
+    for r in rules.get("rules", []):
+        by_label.setdefault(r.get("label_id") or "", []).append(r)
+    moves = []
+    for m in catalog.get("moves", []):
+        item = dict(m)
+        item["rules"] = by_label.get(m["id"], []) + by_label.get("sig.*", [])
+        moves.append(item)
+    return {
+        "version": catalog.get("version"),
+        "status": catalog.get("status"),
+        "hook_zh": catalog.get("product_hook_zh"),
+        "hook_en": catalog.get("product_hook_en"),
+        "moves": moves,
+    }
 
 
 # Serve coach UI + fixtures (Docker / Render). Mounts last so API routes take precedence.

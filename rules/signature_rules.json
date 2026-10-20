@@ -1,0 +1,57 @@
+{
+  "version": "0.1.0",
+  "mode": "signature_move",
+  "status": "stub",
+  "note_zh": "招牌动作纠错规则预埋：当前以口头 cue 为主，几何/模型阈值待真视频数据后再钉。",
+  "note_en": "Stub coaching rules for signature moves. Geometry/model thresholds TBD after labeled clips.",
+  "rules": [
+    {
+      "id": "sig.marseille_turn.balance",
+      "label_id": "sig.marseille_turn",
+      "from": "cue",
+      "severity": "tip",
+      "feedback_zh": "转身时重心压在支撑脚上，别先抬头找人。",
+      "feedback_en": "Load the plant foot through the spin — don't look up too early."
+    },
+    {
+      "id": "sig.elastico.contact",
+      "label_id": "sig.elastico",
+      "from": "cue",
+      "severity": "tip",
+      "feedback_zh": "外侧假晃要骗到防守者重心，内侧扣回要快、贴地。",
+      "feedback_en": "Sell the outside fake; the inside snap should be quick and low."
+    },
+    {
+      "id": "sig.stepover.rhythm",
+      "label_id": "sig.stepover",
+      "from": "cue",
+      "severity": "tip",
+      "feedback_zh": "踩单车节奏要稳，最后一下变向才加速。",
+      "feedback_en": "Keep the step-over rhythm; explode only on the real exit."
+    },
+    {
+      "id": "sig.rainbow.timing",
+      "label_id": "sig.rainbow",
+      "from": "cue",
+      "severity": "tip",
+      "feedback_zh": "垫球与挑球衔接要紧，挑完立刻找落点。",
+      "feedback_en": "Link the roll and flick tightly; sprint to the landing spot."
+    },
+    {
+      "id": "sig.cruyff_turn.disguise",
+      "label_id": "sig.cruyff_turn",
+      "from": "cue",
+      "severity": "tip",
+      "feedback_zh": "假传要像真的——摆腿幅度够，再收到身后。",
+      "feedback_en": "Sell the pass first — big swing, then drag behind."
+    },
+    {
+      "id": "sig.any.safety",
+      "label_id": "sig.*",
+      "from": "cue",
+      "severity": "tip",
+      "feedback_zh": "招牌动作先慢后快；热身充分，避免脚踝硬拧。",
+      "feedback_en": "Learn signature moves slow → fast; warm up ankles before sharp cuts."
+    }
+  ]
+}
