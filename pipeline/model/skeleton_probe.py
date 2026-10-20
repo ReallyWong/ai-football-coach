@@ -8,6 +8,9 @@ Contract (docs/pose_contract.md, integrations/pyskl.md):
 Preprocess matches pose_contract: root-center mid-hip, scale by shoulder width.
 This head is a CPU-trainable stand-in; replace with ST-GCN++ from pyskl later
 without changing the I/O shapes (see docs/m2_model.md).
+
+torch is optional. Preprocess and ONNX inference import when torch is absent.
+Constructing SkeletonProbe still requires torch (local train / ONNX export).
 """
 from __future__ import annotations
 
@@ -16,8 +19,27 @@ from pathlib import Path
 from typing import Any, Sequence
 
 import numpy as np
-import torch
-import torch.nn as nn
+
+# requirements-deploy.txt ships ONNX Runtime, not torch. Importing this module
+# must succeed on that image; training and ONNX export still require torch.
+try:
+    import torch
+    import torch.nn as nn
+except ImportError:  # pragma: no cover - deploy image and tests/test_deploy_import.py
+    torch = None  # type: ignore[assignment]
+    nn = None  # type: ignore[assignment]
+
+_TORCH_REQUIRED = (
+    "torch is required to train or export SkeletonProbe. "
+    "The analyze API uses ONNX Runtime and does not need torch."
+)
+
+
+def _require_torch():
+    if torch is None or nn is None:
+        raise ImportError(_TORCH_REQUIRED)
+    return torch, nn
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TAXONOMY_PATH = REPO_ROOT / "labels" / "taxonomy.json"
@@ -115,10 +137,12 @@ def preprocess_tvx_to_nctv(
     return nctv
 
 
-class SkeletonProbe(nn.Module):
+class SkeletonProbe(nn.Module if nn is not None else object):  # type: ignore[misc]
     """Temporal average-pool + 2-layer MLP on flattened joint xy.
 
     Intentionally tiny so CPU train + ONNX export stay under ~2 minutes.
+    Subclasses ``nn.Module`` when torch is installed; constructing it without
+    torch raises ImportError so the API process can still import this module.
     """
 
     def __init__(
@@ -130,6 +154,7 @@ class SkeletonProbe(nn.Module):
         hidden: int = 64,
         dropout: float = 0.1,
     ) -> None:
+        _require_torch()
         super().__init__()
         self.num_classes = num_classes
         self.t = t
@@ -165,7 +190,8 @@ class SkeletonProbe(nn.Module):
 
 
 def nctv_to_torch(nctv: np.ndarray, device: torch.device | str | None = None) -> torch.Tensor:
-    t = torch.from_numpy(np.asarray(nctv, dtype=np.float32))
+    _torch, _ = _require_torch()
+    t = _torch.from_numpy(np.asarray(nctv, dtype=np.float32))
     if device is not None:
         t = t.to(device)
     return t

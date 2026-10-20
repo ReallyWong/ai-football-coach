@@ -14,6 +14,8 @@ httpx>=0.27  # FastAPI TestClient
 onnx>=1.14
 onnxscript>=0.1
 
-# Optional video upload (/analyze/video)
+# Optional video upload (/analyze/video). python-multipart is required at
+# import time because FastAPI registers the UploadFile route on startup.
+python-multipart>=0.0.9
 mediapipe>=0.10,<0.10.14
 opencv-python-headless>=4.8

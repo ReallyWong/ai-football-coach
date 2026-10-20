@@ -3,3 +3,7 @@ onnxruntime
 fastapi
 uvicorn[standard]
 pydantic
+# Required at import: /analyze/video registers an UploadFile route.
+python-multipart
+# torch is intentionally omitted. Train/export use requirements-m2.txt.
+# The API loads the ONNX probe and must start without torch.
