@@ -82,6 +82,33 @@
     select { background: #0f172a; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 0.4rem 0.55rem; }
     details.advanced { margin-top: 1rem; border: 1px dashed var(--line); border-radius: 12px; padding: 0.7rem 1rem; color: var(--muted); font-size: 0.86rem; }
     details.advanced summary { cursor: pointer; color: var(--text); font-weight: 600; }
+    .mode-toggle {
+      display: inline-flex; background: #1e293b; border-radius: 999px; padding: 0.15rem;
+      border: 1px solid var(--line); margin-top: 0.85rem; gap: 0.1rem;
+    }
+    .mode-toggle button {
+      border: none; background: transparent; color: var(--muted); padding: 0.4rem 0.9rem;
+      border-radius: 999px; cursor: pointer; font-weight: 650; font-family: inherit;
+    }
+    .mode-toggle button.on { background: var(--accent); color: #0b1220; }
+    #panelSig { display: none; }
+    body.mode-sig #panelFund,
+    body.mode-sig .hero-actions { display: none; }
+    body.mode-sig #panelSig { display: block; }
+    #panelSig > h2 { color: var(--text); font-size: 1.05rem; }
+    .tiny { font-size: 0.8rem; color: #64748b; margin: 0.15rem 0 0.35rem; }
+    .sig-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.7rem; margin-top: 0.75rem;
+    }
+    .sig-card {
+      text-align: left; background: #0f172a; color: var(--text);
+      border: 1px solid var(--line); border-radius: 12px; padding: 0.85rem 0.95rem;
+    }
+    .sig-card h3 { margin: 0 0 0.3rem; font-size: 1rem; }
+    .sig-card p { margin: 0; color: var(--muted); font-size: 0.86rem; }
+    .sig-card .stars { margin-top: 0.45rem; color: var(--pink); font-size: 0.78rem; font-weight: 650; }
+    .sig-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   </style>
 </head>
 <body>
@@ -171,6 +198,8 @@
   <script>
 (function () {
   const API = "http://127.0.0.1:8000";
+  const STATIC_CATALOG = "../labels/signature_moves.json";
+  const STATIC_RULES = "../rules/signature_rules.json";
   const I18N = {
     zh: {
       eyebrow: "演示 · v1 不上机器人",
@@ -265,33 +294,87 @@
   ];
 
 
+  let signatureCatalog = null;
+
+  function fetchSignal(ms) {
+    if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+      return AbortSignal.timeout(ms);
+    }
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), ms);
+    return ctrl.signal;
+  }
+
+  // Same join as GET /signature-moves: catalog cues + stub rules, no extra moves.
+  async function loadStaticSignatureCatalog() {
+    const catRes = await fetch(STATIC_CATALOG);
+    if (!catRes.ok) throw new Error(catRes.status + " " + catRes.statusText);
+    const catalog = await catRes.json();
+    const rulesRes = await fetch(STATIC_RULES);
+    const rulesDoc = rulesRes.ok ? await rulesRes.json() : { rules: [] };
+    const byLabel = {};
+    for (const rule of (rulesDoc.rules || [])) {
+      const id = rule.label_id || "";
+      (byLabel[id] = byLabel[id] || []).push(rule);
+    }
+    const moves = (catalog.moves || []).map((m) => Object.assign({}, m, {
+      rules: (byLabel[m.id] || []).concat(byLabel["sig.*"] || []),
+    }));
+    return {
+      version: catalog.version,
+      status: catalog.status,
+      hook_zh: catalog.product_hook_zh || catalog.hook_zh || "",
+      hook_en: catalog.product_hook_en || catalog.hook_en || "",
+      moves: moves,
+    };
+  }
+
+  async function fetchSignatureCatalog() {
+    try {
+      const res = await fetch(API + "/signature-moves", { signal: fetchSignal(1200) });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (!Array.isArray(data.moves)) throw new Error("empty catalog");
+      return data;
+    } catch (apiErr) {
+      return loadStaticSignatureCatalog();
+    }
+  }
+
+  function renderSignature(data) {
+    $("sigHook").textContent = lang === "zh" ? (data.hook_zh || "") : (data.hook_en || "");
+    const grid = $("sigGrid");
+    grid.innerHTML = "";
+    for (const m of (data.moves || [])) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "sig-card";
+      const title = document.createElement("h3");
+      title.textContent = lang === "zh" ? (m.name_zh || "") : (m.name_en || "");
+      const cue = document.createElement("p");
+      cue.textContent = lang === "zh" ? (m.cue_zh || "") : (m.cue_en || "");
+      const stars = document.createElement("div");
+      stars.className = "stars";
+      stars.textContent = (m.star_flavor || []).join(" · ");
+      card.append(title, cue, stars);
+      card.onclick = () => {
+        grid.querySelectorAll(".sig-card").forEach(c => c.classList.remove("on"));
+        card.classList.add("on");
+        const rules = m.rules || [];
+        const tip = rules[0];
+        $("sigTipMain").textContent = lang==="zh" ? (m.cue_zh||"") : (m.cue_en||"");
+        $("sigTipSub").textContent = tip
+          ? (lang==="zh" ? (tip.feedback_zh||tip.feedback_en||"") : (tip.feedback_en||tip.feedback_zh||""))
+          : ((m.aka||[]).join(" / "));
+      };
+      grid.appendChild(card);
+    }
+  }
+
   async function loadSignatureMoves() {
     try {
-      const res = await fetch(API + "/signature-moves");
-      const data = await res.json();
-      $("sigHook").textContent = lang === "zh" ? (data.hook_zh || "") : (data.hook_en || "");
-      const grid = $("sigGrid");
-      grid.innerHTML = "";
-      for (const m of (data.moves || [])) {
-        const card = document.createElement("button");
-        card.type = "button";
-        card.className = "sig-card";
-        card.innerHTML = `<h3>${lang==="zh"?m.name_zh:m.name_en}</h3>
-          <p>${lang==="zh"?m.cue_zh:m.cue_en}</p>
-          <div class="stars">${(m.star_flavor||[]).join(" · ")}</div>`;
-        card.onclick = () => {
-          grid.querySelectorAll(".sig-card").forEach(c => c.classList.remove("on"));
-          card.classList.add("on");
-          const rules = m.rules || [];
-          const tip = rules[0];
-          $("sigTipMain").textContent = lang==="zh" ? (m.cue_zh||"") : (m.cue_en||"");
-          $("sigTipSub").textContent = tip
-            ? (lang==="zh" ? (tip.feedback_zh||tip.feedback_en||"") : (tip.feedback_en||tip.feedback_zh||""))
-            : ((m.aka||[]).join(" / "));
-          setStatus((lang==="zh"?"已选择：":"Selected: ") + (lang==="zh"?m.name_zh:m.name_en), "ok");
-        };
-        grid.appendChild(card);
-      }
+      if (!signatureCatalog) signatureCatalog = await fetchSignatureCatalog();
+      renderSignature(signatureCatalog);
     } catch (e) {
       $("sigHook").textContent = (lang==="zh"?"目录加载失败：":"Catalog failed: ") + e.message;
     }
@@ -303,7 +386,7 @@
     $("modeSig").classList.toggle("on", mode === "sig");
     localStorage.setItem("aifc_mode", mode);
     if (mode === "sig") loadSignatureMoves();
-    else setStatus(t().statusReady);
+    else if (!state.data) setStatus(t().statusReady);
   }
 
   $("modeFund").onclick = () => setMode("fund");
@@ -445,7 +528,13 @@
       render(data);
       setStatus(t().statusDone, "ok");
     } catch (e) {
-      setStatus(t().statusApiFail + e.message, "err");
+      const offline = /failed to fetch|networkerror|load failed|abort/i.test(String(e && e.message || e));
+      const hint = offline
+        ? (lang === "zh"
+          ? "完整分析需要本机 API（http://127.0.0.1:8000）。此页面不会伪造分析结果。"
+          : "Full analyze needs the local API (http://127.0.0.1:8000). This page does not invent results.")
+        : (e && e.message ? e.message : String(e));
+      setStatus(t().statusApiFail + hint, "err");
     } finally {
       $("btnAnalyze").disabled = !selectedFile;
     }
