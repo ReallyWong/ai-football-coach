@@ -1,0 +1,385 @@
+{
+  "version": "0.1.0",
+  "status": "preseed",
+  "status_zh": "预置",
+  "status_en": "Preseed",
+  "note_zh": "球星招牌动作模式：与基础技术四类（pass/receive/shot/dribble）并行，不占用现有 ONNX class_id 0–3。后续可单独训模型或做检索匹配。",
+  "note_en": "Signature Move mode runs beside the four youth fundamentals. Does not reuse ONNX class_id 0–3 until a dedicated model ships.",
+  "hook_zh": "小孩学球，本来就在学球星。从招牌动作开始练，比干巴巴的「脚内侧传球」更上瘾。",
+  "hook_en": "Kids copy stars first. Start with signature moves — more exciting than dry fundamentals alone.",
+  "moves": [
+    {
+      "id": "sig.marseille_turn",
+      "slug": "marseille-turn",
+      "name_zh": "马赛回旋",
+      "name_en": "Marseille turn (roulette)",
+      "aka": [
+        "Zidane turn",
+        "roulette"
+      ],
+      "star_flavor": [
+        "Zidane"
+      ],
+      "difficulty": 3,
+      "tags": [
+        "1v1",
+        "turn",
+        "shield"
+      ],
+      "clip_hint": {
+        "duration_s": [
+          1.5,
+          3.5
+        ],
+        "view": [
+          "front",
+          "diagonal"
+        ]
+      },
+      "cue_zh": "脚底拉球转身，护住球再加速离开。",
+      "cue_en": "Sole drag + spin while shielding, then accelerate away.",
+      "status": "preseed",
+      "rules": [
+        {
+          "id": "sig.marseille_turn.balance",
+          "label_id": "sig.marseille_turn",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "转身时重心压在支撑脚上，别先抬头找人。",
+          "feedback_en": "Load the plant foot through the spin — don't look up too early."
+        },
+        {
+          "id": "sig.any.safety",
+          "label_id": "sig.*",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "招牌动作先慢后快；热身充分，避免脚踝硬拧。",
+          "feedback_en": "Learn signature moves slow → fast; warm up ankles before sharp cuts."
+        }
+      ]
+    },
+    {
+      "id": "sig.elastico",
+      "slug": "elastico",
+      "name_zh": "牛尾巴",
+      "name_en": "Elastico (flip-flap)",
+      "aka": [
+        "flip-flap",
+        "elástico"
+      ],
+      "star_flavor": [
+        "Ronaldo Nazário",
+        "Ronaldinho"
+      ],
+      "difficulty": 4,
+      "tags": [
+        "1v1",
+        "feint"
+      ],
+      "clip_hint": {
+        "duration_s": [
+          1.0,
+          2.5
+        ],
+        "view": [
+          "front",
+          "diagonal"
+        ]
+      },
+      "cue_zh": "脚外侧假晃，内侧快速扣回变向。",
+      "cue_en": "Outside-foot fake, snap back inside to change direction.",
+      "status": "preseed",
+      "rules": [
+        {
+          "id": "sig.elastico.contact",
+          "label_id": "sig.elastico",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "外侧假晃要骗到防守者重心，内侧扣回要快、贴地。",
+          "feedback_en": "Sell the outside fake; the inside snap should be quick and low."
+        },
+        {
+          "id": "sig.any.safety",
+          "label_id": "sig.*",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "招牌动作先慢后快；热身充分，避免脚踝硬拧。",
+          "feedback_en": "Learn signature moves slow → fast; warm up ankles before sharp cuts."
+        }
+      ]
+    },
+    {
+      "id": "sig.stepover",
+      "slug": "stepover",
+      "name_zh": "踩单车",
+      "name_en": "Step-over",
+      "aka": [
+        "pedalada",
+        "scissors"
+      ],
+      "star_flavor": [
+        "Cristiano Ronaldo",
+        "Robinho"
+      ],
+      "difficulty": 2,
+      "tags": [
+        "1v1",
+        "feint",
+        "rhythm"
+      ],
+      "clip_hint": {
+        "duration_s": [
+          1.0,
+          3.0
+        ],
+        "view": [
+          "front",
+          "side"
+        ]
+      },
+      "cue_zh": "脚从球上绕过制造假方向，真方向再推走。",
+      "cue_en": "Circle the foot over the ball to fake, then push the real way.",
+      "status": "preseed",
+      "rules": [
+        {
+          "id": "sig.stepover.rhythm",
+          "label_id": "sig.stepover",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "踩单车节奏要稳，最后一下变向才加速。",
+          "feedback_en": "Keep the step-over rhythm; explode only on the real exit."
+        },
+        {
+          "id": "sig.any.safety",
+          "label_id": "sig.*",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "招牌动作先慢后快；热身充分，避免脚踝硬拧。",
+          "feedback_en": "Learn signature moves slow → fast; warm up ankles before sharp cuts."
+        }
+      ]
+    },
+    {
+      "id": "sig.rainbow",
+      "slug": "rainbow-flick",
+      "name_zh": "油炸丸子",
+      "name_en": "Rainbow flick",
+      "aka": [
+        "lambretta",
+        "fish-flop"
+      ],
+      "star_flavor": [
+        "Neymar",
+        "Kerlon"
+      ],
+      "difficulty": 4,
+      "tags": [
+        "show",
+        "aerial",
+        "1v1"
+      ],
+      "clip_hint": {
+        "duration_s": [
+          1.0,
+          2.5
+        ],
+        "view": [
+          "side",
+          "diagonal"
+        ]
+      },
+      "cue_zh": "一脚垫起，另一脚从身后挑过头顶。",
+      "cue_en": "Roll up with one foot, flick over your head with the other.",
+      "status": "preseed",
+      "rules": [
+        {
+          "id": "sig.rainbow.timing",
+          "label_id": "sig.rainbow",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "垫球与挑球衔接要紧，挑完立刻找落点。",
+          "feedback_en": "Link the roll and flick tightly; sprint to the landing spot."
+        },
+        {
+          "id": "sig.any.safety",
+          "label_id": "sig.*",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "招牌动作先慢后快；热身充分，避免脚踝硬拧。",
+          "feedback_en": "Learn signature moves slow → fast; warm up ankles before sharp cuts."
+        }
+      ]
+    },
+    {
+      "id": "sig.cruyff_turn",
+      "slug": "cruyff-turn",
+      "name_zh": "克鲁伊夫转身",
+      "name_en": "Cruyff turn",
+      "aka": [
+        "Cruyff"
+      ],
+      "star_flavor": [
+        "Johan Cruyff"
+      ],
+      "difficulty": 2,
+      "tags": [
+        "turn",
+        "deception"
+      ],
+      "clip_hint": {
+        "duration_s": [
+          1.0,
+          2.5
+        ],
+        "view": [
+          "side",
+          "diagonal"
+        ]
+      },
+      "cue_zh": "假传真扣，脚内侧把球收到身后转身。",
+      "cue_en": "Fake a pass, drag the ball behind the standing leg and turn.",
+      "status": "preseed",
+      "rules": [
+        {
+          "id": "sig.cruyff_turn.disguise",
+          "label_id": "sig.cruyff_turn",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "假传要像真的——摆腿幅度够，再收到身后。",
+          "feedback_en": "Sell the pass first — big swing, then drag behind."
+        },
+        {
+          "id": "sig.any.safety",
+          "label_id": "sig.*",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "招牌动作先慢后快；热身充分，避免脚踝硬拧。",
+          "feedback_en": "Learn signature moves slow → fast; warm up ankles before sharp cuts."
+        }
+      ]
+    },
+    {
+      "id": "sig.body_feint",
+      "slug": "body-feint",
+      "name_zh": "肩部假动作",
+      "name_en": "Body / shoulder feint",
+      "aka": [
+        "drop shoulder"
+      ],
+      "star_flavor": [
+        "Messi"
+      ],
+      "difficulty": 2,
+      "tags": [
+        "1v1",
+        "feint",
+        "timing"
+      ],
+      "clip_hint": {
+        "duration_s": [
+          0.8,
+          2.0
+        ],
+        "view": [
+          "front",
+          "diagonal"
+        ]
+      },
+      "cue_zh": "肩胯先骗一侧，球和加速走另一侧。",
+      "cue_en": "Sell one side with hips/shoulders, take the ball the other way.",
+      "status": "preseed",
+      "rules": [
+        {
+          "id": "sig.any.safety",
+          "label_id": "sig.*",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "招牌动作先慢后快；热身充分，避免脚踝硬拧。",
+          "feedback_en": "Learn signature moves slow → fast; warm up ankles before sharp cuts."
+        }
+      ]
+    },
+    {
+      "id": "sig.rabona",
+      "slug": "rabona",
+      "name_zh": "插花脚 / 拉波纳",
+      "name_en": "Rabona",
+      "aka": [
+        "wrapped kick"
+      ],
+      "star_flavor": [
+        "Robinho",
+        "Neymar"
+      ],
+      "difficulty": 5,
+      "tags": [
+        "pass",
+        "shot",
+        "show"
+      ],
+      "clip_hint": {
+        "duration_s": [
+          1.0,
+          2.5
+        ],
+        "view": [
+          "side",
+          "diagonal"
+        ]
+      },
+      "cue_zh": "支撑脚站稳，踢球腿绕到支撑腿后触球。",
+      "cue_en": "Plant firm; wrapping leg strikes from behind the standing leg.",
+      "status": "preseed",
+      "rules": [
+        {
+          "id": "sig.any.safety",
+          "label_id": "sig.*",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "招牌动作先慢后快；热身充分，避免脚踝硬拧。",
+          "feedback_en": "Learn signature moves slow → fast; warm up ankles before sharp cuts."
+        }
+      ]
+    },
+    {
+      "id": "sig.sombrero",
+      "slug": "sombrero",
+      "name_zh": "帽子戏法挑过",
+      "name_en": "Sombrero / chip over",
+      "aka": [
+        "lob over opponent"
+      ],
+      "star_flavor": [
+        "Ronaldinho"
+      ],
+      "difficulty": 4,
+      "tags": [
+        "1v1",
+        "aerial"
+      ],
+      "clip_hint": {
+        "duration_s": [
+          1.0,
+          2.5
+        ],
+        "view": [
+          "side",
+          "front"
+        ]
+      },
+      "cue_zh": "轻挑过防守者头顶，自己绕过去衔接。",
+      "cue_en": "Soft chip over the defender, then run onto it.",
+      "status": "preseed",
+      "rules": [
+        {
+          "id": "sig.any.safety",
+          "label_id": "sig.*",
+          "from": "cue",
+          "severity": "tip",
+          "feedback_zh": "招牌动作先慢后快；热身充分，避免脚踝硬拧。",
+          "feedback_en": "Learn signature moves slow → fast; warm up ankles before sharp cuts."
+        }
+      ]
+    }
+  ]
+}

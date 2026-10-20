@@ -10,6 +10,7 @@
       --ok: #22c55e; --warn: #f59e0b; --accent: #38bdf8; --pink: #f472b6; --line: #243247;
     }
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     body {
       margin: 0;
       font-family: "Segoe UI", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -19,6 +20,7 @@
     }
     .wrap { max-width: 980px; margin: 0 auto; padding: 1.25rem 1.15rem 3rem; }
     .topbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .brand { font-weight: 750; letter-spacing: 0.01em; }
     .lang { display: inline-flex; background: #1e293b; border-radius: 999px; padding: 0.15rem; border: 1px solid var(--line); }
     .lang button {
       border: none; background: transparent; color: var(--muted); padding: 0.35rem 0.75rem;
@@ -30,14 +32,28 @@
       background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.35);
       border-radius: 999px; padding: 0.2rem 0.65rem; margin-bottom: 0.55rem;
     }
-    h1 { font-size: clamp(1.4rem, 3vw, 1.85rem); margin: 0 0 0.35rem; }
+    h1.hook {
+      font-size: clamp(1.85rem, 4.6vw, 2.7rem); margin: 0 0 0.45rem;
+      letter-spacing: -0.03em; line-height: 1.12;
+    }
     .lead { color: var(--muted); margin: 0; max-width: 40rem; }
-    .hero-actions { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 0.9rem; }
+    .mode-toggle {
+      display: inline-flex; background: #1e293b; border-radius: 999px; padding: 0.15rem;
+      border: 1px solid var(--line); margin-top: 0.9rem; gap: 0.1rem;
+    }
+    .mode-toggle button {
+      border: none; background: transparent; color: var(--muted); padding: 0.4rem 0.9rem;
+      border-radius: 999px; cursor: pointer; font-weight: 650; font-family: inherit;
+    }
+    .mode-toggle button.on { background: var(--accent); color: #0b1220; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 0.95rem; }
     button, .btn {
       appearance: none; border: none; border-radius: 10px; padding: 0.65rem 1.05rem;
       font-weight: 650; font-size: 0.92rem; cursor: pointer; font-family: inherit;
     }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .primary { background: linear-gradient(135deg, #38bdf8, #818cf8); color: #0b1220; }
+    button.primary.lg { padding: 0.82rem 1.25rem; font-size: 1.02rem; }
     .secondary { background: #243247; color: var(--text); }
     .ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
     button:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -46,24 +62,31 @@
       background: rgba(15,23,42,0.55); text-align: center; transition: border-color .15s, background .15s;
     }
     .upload.drag { border-color: var(--accent); background: rgba(56,189,248,0.08); }
-    .upload h2 { margin: 0 0 0.35rem; font-size: 1.05rem; }
+    .upload h2 { margin: 0 0 0.35rem; font-size: 1.05rem; color: var(--text); }
     .upload p { margin: 0; color: var(--muted); font-size: 0.9rem; }
     .upload input[type=file] { margin-top: 0.75rem; color: var(--muted); max-width: 100%; }
-    .upload .hint { margin-top: 0.45rem; font-size: 0.8rem; color: #64748b; }
-    .grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 1rem; margin-top: 1.1rem; }
+    .hint.callout {
+      margin-top: 0.75rem; font-size: 0.84rem; color: #fde68a; text-align: left;
+      background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.28);
+      border-radius: 10px; padding: 0.6rem 0.75rem;
+    }
+    .grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 1rem; margin-top: 1rem; }
     @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
     .card {
       background: rgba(21,32,51,0.92); border: 1px solid var(--line); border-radius: 16px; padding: 1.05rem 1.15rem;
     }
     .card h2 { font-size: 0.95rem; margin: 0 0 0.7rem; color: var(--muted); font-weight: 600; }
+    .demo-stage h2, #panelSig > h2, .tease h2 { color: var(--text); font-size: 1.05rem; }
     .tip {
       border-left: 4px solid var(--warn);
       background: linear-gradient(90deg, rgba(245,158,11,0.12), transparent);
       padding: 0.95rem 1rem; border-radius: 12px; margin-bottom: 0.8rem;
     }
     .tip.ok { border-left-color: var(--ok); background: linear-gradient(90deg, rgba(34,197,94,0.12), transparent); }
-    .tip .main { font-size: 1.12rem; font-weight: 700; margin: 0 0 0.2rem; }
+    .tip .main { font-size: 1.15rem; font-weight: 750; margin: 0 0 0.25rem; }
     .tip .sub { color: var(--muted); margin: 0; font-size: 0.9rem; }
+    .bar { height: 8px; background: #0f172a; border-radius: 999px; overflow: hidden; margin-top: 0.75rem; }
+    .bar > div { height: 100%; width: 0; background: linear-gradient(90deg, #38bdf8, #818cf8); }
     .label-row { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.7rem; }
     .pill { background: #1e293b; border-radius: 999px; padding: 0.28rem 0.65rem; font-size: 0.84rem; }
     .pill strong { color: var(--accent); }
@@ -71,230 +94,936 @@
     .score { background: #0f172a; border: 1px solid var(--line); border-radius: 10px; padding: 0.4rem 0.6rem; min-width: 4.4rem; text-align: center; }
     .score b { display: block; font-size: 1.1rem; }
     .score span { color: var(--muted); font-size: 0.72rem; }
-    canvas#stick { width: 100%; max-height: 320px; background: #0a101c; border-radius: 12px; border: 1px solid var(--line); display: block; }
-    .controls { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.7rem; }
-    input[type=range] { flex: 1; accent-color: var(--accent); }
-    .meta { color: var(--muted); font-size: 0.84rem; margin: 0.35rem 0 0; font-variant-numeric: tabular-nums; }
-    .meta em { color: var(--pink); font-style: normal; font-weight: 700; }
-    .status { font-size: 0.88rem; color: var(--muted); min-height: 1.25em; margin-top: 0.65rem; }
+    canvas.stick {
+      width: 100%; height: auto; background: #070d18; border-radius: 12px;
+      border: 1px solid var(--line); display: block;
+    }
+    .clip-shell { margin-top: 0.75rem; background: #070d18; border-radius: 14px; border: 1px solid var(--line); overflow: hidden; }
+    .clip-top, .clip-bot {
+      display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+      padding: 0.45rem 0.75rem; font-size: 0.8rem; color: var(--muted);
+    }
+    .clip-bot { border-top: 1px solid #1e293b; }
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #fb7185; display: inline-block;
+      margin-right: 0.35rem; box-shadow: 0 0 0 4px rgba(251,113,133,0.18);
+    }
+    .scenarios { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+    .scenarios button { background: #0f172a; color: var(--text); border: 1px solid var(--line); }
+    .scenarios button.on { background: var(--accent); color: #0b1220; border-color: transparent; }
+    .controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.7rem; }
+    .controls input[type=range] { flex: 1 1 140px; min-width: 120px; accent-color: var(--accent); }
+    .meta { color: var(--muted); font-size: 0.84rem; margin: 0.45rem 0 0; font-variant-numeric: tabular-nums; }
+    .meta em, .badge.hot { color: var(--pink); font-style: normal; font-weight: 750; }
+    .badge {
+      display: inline-block; font-size: 0.72rem; padding: 0.12rem 0.45rem; border-radius: 999px;
+      background: #334155; color: var(--muted);
+    }
+    .badge.hot { background: #831843; color: #fce7f3; }
+    .status { font-size: 0.88rem; color: var(--muted); min-height: 1.25em; margin: 0.65rem 0 0; }
     .status.err { color: #f87171; } .status.ok { color: var(--ok); }
     .select-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: center; margin-top: 0.75rem; }
+    select, .select-row label { background: transparent; color: var(--text); }
     select { background: #0f172a; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 0.4rem 0.55rem; }
+    .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.85rem; }
+    @media (max-width: 700px) { .ba { grid-template-columns: 1fr; } }
+    .ba h3 { margin: 0 0 0.35rem; font-size: 0.78rem; color: var(--muted); font-weight: 700; }
+    .ba p { margin: 0; }
+    .ba .before { border-left: 3px solid var(--warn); }
+    .ba .after { border-left: 3px solid var(--ok); }
+    .tease { margin-top: 0.85rem; }
+    .tease-head, .sig-head { display: flex; justify-content: space-between; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+    .tiny { font-size: 0.84rem; color: var(--muted); margin: 0.2rem 0 0.15rem; }
+    #panelSig { display: none; margin-top: 1rem; }
+    body.mode-sig #panelFund { display: none; }
+    body.mode-sig #panelSig { display: block; }
+    .sig-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.7rem; margin-top: 0.75rem; }
+    .sig-card {
+      text-align: left; background: #0f172a; color: var(--text);
+      border: 1px solid var(--line); border-radius: 12px; padding: 0.85rem 0.95rem;
+    }
+    .sig-card h3 { margin: 0.3rem 0 0.3rem; font-size: 1rem; }
+    .sig-card p { margin: 0; color: var(--muted); font-size: 0.86rem; }
+    .sig-card .stars { margin-top: 0.45rem; color: var(--pink); font-size: 0.78rem; font-weight: 650; }
+    .sig-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .preseed {
+      display: inline-block; font-size: 0.68rem; letter-spacing: 0.04em; color: #fde68a;
+      background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35);
+      border-radius: 999px; padding: 0.05rem 0.45rem;
+    }
+    .card.pulse { animation: evidence-pulse 0.7s ease; }
+    @keyframes evidence-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(244,114,182,0); }
+      35% { box-shadow: 0 0 0 3px rgba(244,114,182,0.7); }
+      100% { box-shadow: 0 0 0 0 rgba(244,114,182,0); }
+    }
     details.advanced { margin-top: 1rem; border: 1px dashed var(--line); border-radius: 12px; padding: 0.7rem 1rem; color: var(--muted); font-size: 0.86rem; }
     details.advanced summary { cursor: pointer; color: var(--text); font-weight: 600; }
+    code { font-size: 0.85em; color: #a5b4fc; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="topbar">
-      <div class="eyebrow" data-i18n="eyebrow">Demo · no robot in v1</div>
+      <div class="brand">AI Football Coach</div>
       <div class="lang" role="group" aria-label="Language">
         <button type="button" id="langZh" class="on">中文</button>
         <button type="button" id="langEn">EN</button>
       </div>
     </div>
     <header>
-      <h1 data-i18n="title">AI Football Coach</h1>
-      <p class="lead" data-i18n="lead">Upload a short training clip or try the sample. We estimate pose, score the skill, and give a correction tip.</p>
+      <div class="eyebrow" data-i18n="eyebrow">演示 · v1 不上机器人</div>
+      <h1 class="hook" data-i18n="hook">这一脚哪里不对？</h1>
+      <p class="lead" data-i18n="lead"></p>
       <div class="mode-toggle" role="group" aria-label="Mode">
         <button type="button" id="modeFund" class="on" data-i18n="modeFund">基础技术</button>
         <button type="button" id="modeSig" data-i18n="modeSig">球星招牌动作</button>
       </div>
       <div class="hero-actions">
-        <button type="button" class="primary" id="btnDemo" data-i18n="btnDemo">Try sample (plant foot)</button>
-        <button type="button" class="ghost" id="btnJump" disabled data-i18n="btnJump">Jump to problem frame</button>
+        <button type="button" class="primary lg" id="btnDemo" data-i18n="btnDemo">演示模式</button>
+        <button type="button" class="ghost" id="btnJump" disabled data-i18n="btnJump">跳到问题帧</button>
       </div>
     </header>
 
     <div id="panelFund">
-    <section class="upload" id="dropzone">
-      <h2 data-i18n="uploadTitle">Upload your video</h2>
-      <p data-i18n="uploadDesc">MP4 / MOV / WebM · ideally side or diagonal view · keep it under ~15s</p>
-      <div class="select-row">
-        <label>
-          <span data-i18n="skillLabel">Skill (optional)</span>
-          <select id="skillSelect">
-            <option value="">Auto</option>
-            <option value="pass.inside">pass.inside</option>
-            <option value="receive.first_touch">receive.first_touch</option>
-            <option value="shot.instep">shot.instep</option>
-            <option value="dribble.close">dribble.close</option>
-          </select>
-        </label>
-        <input type="file" id="fileInput" accept="video/mp4,video/webm,video/quicktime,video/*" />
-        <button type="button" class="secondary" id="btnAnalyze" disabled data-i18n="btnAnalyze">Analyze video</button>
+      <section class="card demo-stage" id="demoStage" hidden>
+        <h2 data-i18n="demoStageTitle">示例训练片段</h2>
+        <p class="tiny" data-i18n="demoStageNote"></p>
+        <div class="scenarios" id="scenarioRow" role="group"></div>
+        <div class="clip-shell">
+          <div class="clip-top">
+            <span><span class="live-dot" aria-hidden="true"></span><span id="clipBadge">模拟片段</span></span>
+            <span id="clipClock">0.00s</span>
+          </div>
+          <canvas class="stick" id="clipCanvas" width="720" height="300" aria-label="Simulated training clip"></canvas>
+          <div class="clip-bot">
+            <strong id="clipTitle"></strong>
+            <span id="clipView"></span>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button type="button" class="primary" id="btnAnalyzeClip" disabled data-i18n="btnAnalyzeClip">分析这段</button>
+        </div>
+      </section>
+
+      <div id="results" hidden>
+        <div class="grid">
+          <section class="card" id="feedbackCard">
+            <h2 data-i18n="feedbackTitle">教练反馈</h2>
+            <div class="tip" id="tipCard">
+              <p class="main" id="tipMain" aria-live="polite"></p>
+              <p class="sub" id="tipSub"></p>
+              <div class="bar" id="progressBar" hidden><div id="progressFill"></div></div>
+            </div>
+            <div class="label-row">
+              <span class="pill"><span data-i18n="action">识别动作</span> <strong id="actionName">—</strong></span>
+              <span class="pill"><span data-i18n="confidence">把握</span> <strong id="confPct">—</strong></span>
+            </div>
+            <div class="scores" id="scores"></div>
+          </section>
+          <section class="card" id="replayCard">
+            <h2 data-i18n="replayTitle">姿态回放</h2>
+            <canvas class="stick" id="stick" width="420" height="320" aria-label="Stick figure pose"></canvas>
+            <div class="controls">
+              <button type="button" class="secondary" id="btnJumpReplay" disabled data-i18n="btnJump">跳到问题帧</button>
+              <input type="range" id="scrubber" min="0" max="0" value="0" aria-label="Frame scrubber" />
+            </div>
+            <p class="meta">
+              <span data-i18n="frame">第</span> <em id="frameNum">0</em>
+              · <span id="timestamp">0.00s</span>
+              · <span id="metricLine">—</span>
+              <span class="badge hot" id="evidenceBadge" hidden data-i18n="evidenceOn">问题帧</span>
+            </p>
+          </section>
+        </div>
+
+        <div class="ba" id="beforeAfter" hidden>
+          <article class="card before">
+            <h3 data-i18n="beforeTitle">这一脚</h3>
+            <p id="beforeText"></p>
+          </article>
+          <article class="card after">
+            <h3><span data-i18n="afterTitle">纠正后</span> <span class="badge" id="afterTag" data-i18n="afterTag">示意</span></h3>
+            <p id="afterText"></p>
+          </article>
+        </div>
+
+        <section class="card tease" id="sigTease">
+          <div class="tease-head">
+            <h2 data-i18n="teaseTitle">下一步 · 招牌动作</h2>
+            <button type="button" class="secondary" id="btnOpenSig" data-i18n="btnOpenSig">看看招牌动作</button>
+          </div>
+          <p class="tiny" id="teaseNote"></p>
+          <div class="sig-grid" id="teaseGrid"></div>
+        </section>
       </div>
-      <p class="hint" data-i18n="uploadHint">Runs on your computer via local API (MediaPipe). First run may take a minute.</p>
-    </section>
-    <p class="status" id="status"></p>
 
-    <div class="grid">
-      <section class="card">
-        <h2 data-i18n="feedbackTitle">Coach feedback</h2>
-        <div class="tip" id="tipCard">
-          <p class="main" id="tipMain" data-i18n="tipEmpty">No result yet — upload a clip or try the sample.</p>
-          <p class="sub" id="tipSub"></p>
+      <section class="upload" id="dropzone">
+        <h2 data-i18n="uploadTitle">上传你的视频</h2>
+        <p data-i18n="uploadDesc"></p>
+        <div class="select-row">
+          <label>
+            <span data-i18n="skillLabel">技术动作（可选）</span>
+            <select id="skillSelect">
+              <option value="">Auto</option>
+              <option value="pass.inside">pass.inside</option>
+              <option value="receive.first_touch">receive.first_touch</option>
+              <option value="shot.instep">shot.instep</option>
+              <option value="dribble.close">dribble.close</option>
+            </select>
+          </label>
+          <input type="file" id="fileInput" accept="video/mp4,video/webm,video/quicktime,video/*" />
+          <button type="button" class="secondary" id="btnAnalyze" disabled data-i18n="btnAnalyze">开始分析</button>
         </div>
-        <div class="label-row">
-          <span class="pill"><span data-i18n="action">Action</span> <strong id="actionName">—</strong></span>
-          <span class="pill"><span data-i18n="confidence">Confidence</span> <strong id="confPct">—</strong></span>
-        </div>
-        <div class="scores" id="scores"></div>
+        <p class="hint callout" data-i18n="uploadHint"></p>
       </section>
-      <section class="card">
-        <h2 data-i18n="replayTitle">Pose replay</h2>
-        <canvas id="stick" width="420" height="320"></canvas>
-        <div class="controls"><input type="range" id="scrubber" min="0" max="0" value="0" /></div>
-        <p class="meta"><span data-i18n="frame">Frame</span> <em id="frameNum">0</em> · <span id="timestamp">0.00s</span> · <span id="metricLine">—</span></p>
-      </section>
+      <p class="status" id="status" aria-live="polite"></p>
     </div>
 
-    
-    </div>
-    <section id="panelSig" class="card" style="margin-top:1rem">
-      <h2 data-i18n="sigTitle">Signature Move · 球星招牌动作</h2>
-      <p class="lead" id="sigHook" style="margin:.25rem 0 .5rem"></p>
-      <p class="tiny" data-i18n="sigNote">预埋目录：先选动作看要点；模型识别稍后接上，不占用现有四类基础动作。</p>
+    <section id="panelSig" class="card">
+      <div class="sig-head">
+        <h2 data-i18n="sigTitle">球星招牌动作</h2>
+        <span class="preseed" id="sigStatus" data-i18n="preseed">预置</span>
+      </div>
+      <p class="lead" id="sigHook"></p>
+      <p class="tiny" data-i18n="sigNote"></p>
       <div class="sig-grid" id="sigGrid"></div>
       <div class="tip" id="sigTip" style="margin-top:1rem">
-        <p class="main" id="sigTipMain" data-i18n="sigPick">点一张卡片，看球星动作怎么练。</p>
+        <p class="main" id="sigTipMain" data-i18n="sigPick"></p>
         <p class="sub" id="sigTipSub"></p>
       </div>
     </section>
 
     <details class="advanced">
-      <summary data-i18n="advanced">Developer options</summary>
-      <p data-i18n="advancedNote">The /docs page is API reference, not the product UI.</p>
+      <summary data-i18n="advanced">开发者选项</summary>
+      <p data-i18n="advancedNote"></p>
     </details>
   </div>
 
   <script>
 (function () {
-  const API = "http://127.0.0.1:8000";
+  // Fixtures resolve against the coach-ui directory:
+  //   Pages  …/ai-football-coach/coach-ui/  →  …/ai-football-coach/fixtures/
+  //   Render /coach-ui/                     →  /fixtures/   (StaticFiles mount)
+  const SCENARIOS = [
+    { id: "pass.inside", file: "demo_analyze_response.json" },
+    { id: "shot.instep", file: "demo_shot_instep_response.json" },
+  ];
+  const FEATURED = ["sig.marseille_turn", "sig.elastico", "sig.stepover"];
   const I18N = {
     zh: {
       eyebrow: "演示 · v1 不上机器人",
-      title: "AI Football Coach",
-      lead: "上传一段训练视频，或先看样例。我们会估计姿态、识别技术动作，并给出可执行的纠错建议。",
+      hook: "这一脚哪里不对？",
+      lead: "青少年要的不是再看一遍回放，而是下一次触球怎么改。演示模式不需要摄像头，也不需要 MediaPipe。",
       modeFund: "基础技术",
       modeSig: "球星招牌动作",
-      sigTitle: "球星招牌动作",
-      sigNote: "预埋目录：先选动作看要点；识别模型稍后接上。",
-      sigPick: "点一张卡片，看球星动作怎么练。",
-      btnDemo: "先看样例（支撑脚）",
+      btnDemo: "演示模式",
       btnJump: "跳到问题帧",
-      uploadTitle: "上传你的视频",
-      uploadDesc: "支持 MP4 / MOV / WebM · 最好侧面或斜侧面 · 建议 15 秒以内",
-      skillLabel: "技术动作（可选）",
-      btnAnalyze: "开始分析",
-      uploadHint: "在本机 API 上跑（MediaPipe）。第一次可能要等一两分钟。",
+      demoStageTitle: "示例训练片段",
+      demoStageNote: "先看脚内侧传球。正脚背射门是第二条模拟片段。点「分析这段」才会出教练反馈。",
+      btnAnalyzeClip: "分析这段",
+      analyzing: "正在分析…",
+      stepPose: "估计姿态",
+      stepScore: "技术评分",
+      stepRules: "对照教练规则",
       feedbackTitle: "教练反馈",
-      tipEmpty: "还没有结果 — 请上传视频，或先点样例。",
+      tipEmpty: "还没有结果。点「演示模式」，或在本机 API 上上传视频。",
       tipOk: "这一脚看起来没问题，继续保持。",
       action: "识别动作",
       confidence: "把握",
       replayTitle: "姿态回放",
       frame: "第",
+      evidenceOn: "问题帧",
+      beforeTitle: "这一脚",
+      afterTitle: "纠正后",
+      afterTag: "示意",
+      teaseTitle: "下一步 · 招牌动作",
+      btnOpenSig: "看看招牌动作",
+      teaseNote: "马赛回旋等目录已预置。识别模型稍后接上，不占用现有四类基础动作。",
+      uploadTitle: "上传你的视频",
+      uploadDesc: "支持 MP4 / MOV / WebM · 最好侧面或斜侧面 · 建议 15 秒以内",
+      skillLabel: "技术动作（可选）",
+      auto: "自动",
+      btnAnalyze: "开始分析",
+      uploadHint: "GitHub Pages 和 Render 上没有 MediaPipe，上传视频不会出教练结果。请点上方「演示模式」。只有本机安装了 MediaPipe 并启动 API 时，上传才会走 /analyze/video。",
+      sigTitle: "球星招牌动作",
+      sigNote: "预置目录：先看动作要点。识别稍后接上，不占用脚内侧、停球、射门、盘带这四类。",
+      sigPick: "点一张卡片，看这一下怎么练。",
+      preseed: "预置",
+      preseedNote: "预置口令 · 识别模型稍后接上。",
       advanced: "开发者选项",
-      advancedNote: "浏览器里的 /docs 是 API 说明书，不是产品界面。",
-      statusReady: "选好视频后点「开始分析」。",
-      statusDemo: "样例已加载。可拖动滑条，或跳到问题帧。",
+      advancedNote: "浏览器里的 /docs 是 API 说明书，不是产品界面。演示片段来自仓库 fixtures/，Pages 与 Render 都用相对路径加载。",
+      statusReady: "点「演示模式」看完整教练反馈。上传只在本机 API 可用时生效。",
+      statusClipReady: "模拟片段在循环播放。点「分析这段」。",
+      statusDemo: "分析完成。可以拖动回放，或跳到问题帧。",
       statusUploading: "正在上传并分析，请稍候…",
       statusDone: "分析完成。",
       statusNeedFile: "请先选择视频文件。",
+      statusNoApi: "这个页面没有视频分析服务。请用「演示模式」。",
+      statusUseDemo: "请改用「演示模式」。",
       statusApiFail: "分析失败：",
+      statusFixtureFail: "演示片段加载失败。请从 GitHub Pages 的 /coach-ui/、Render 的 /coach-ui/，或仓库根目录的静态服务打开本页。",
+      noKeypoints: "暂无姿态关键节点",
       plantMetric: "支撑脚角度",
+      torsoMetric: "上身倾斜",
+      deviation: "偏离",
       labels: {
         "pass.inside": "脚内侧传球",
         "receive.first_touch": "停球 / 第一脚",
-        "shot.instep": "脚背射门",
-        "dribble.close": "近身运球",
+        "shot.instep": "正脚背射门",
+        "dribble.close": "近身盘带",
       },
       scores: { form: "姿态", timing: "时机", balance: "平衡", overall: "综合" },
     },
     en: {
       eyebrow: "Demo · no robot in v1",
-      title: "AI Football Coach",
-      lead: "Upload a short training clip, or try the sample. We estimate pose, score the skill, and give a correction tip.",
+      hook: "What was wrong with that touch?",
+      lead: "Youth players need the next touch fixed, not another replay. Demo mode needs no camera and no MediaPipe.",
       modeFund: "Fundamentals",
       modeSig: "Signature Moves",
-      sigTitle: "Signature Moves",
-      sigNote: "Preseed catalog: pick a move for cues; recognition model comes later.",
-      sigPick: "Tap a card to see how to train the move.",
-      btnDemo: "Try sample (plant foot)",
+      btnDemo: "Demo mode",
       btnJump: "Jump to problem frame",
-      uploadTitle: "Upload your video",
-      uploadDesc: "MP4 / MOV / WebM · side or diagonal view · keep it under ~15s",
-      skillLabel: "Skill (optional)",
-      btnAnalyze: "Analyze video",
-      uploadHint: "Runs on your computer via local API (MediaPipe). First run may take a minute.",
+      demoStageTitle: "Sample training clip",
+      demoStageNote: "Inside-foot pass plays first. Instep shot is the second simulated clip. Coach feedback appears after Analyze this clip.",
+      btnAnalyzeClip: "Analyze this clip",
+      analyzing: "Analyzing…",
+      stepPose: "Estimating pose",
+      stepScore: "Scoring the skill",
+      stepRules: "Checking coach rules",
       feedbackTitle: "Coach feedback",
-      tipEmpty: "No result yet — upload a clip or try the sample.",
+      tipEmpty: "No result yet. Use Demo mode, or upload a clip when a local API is running.",
       tipOk: "Looks fine — keep it up.",
       action: "Action",
       confidence: "Confidence",
       replayTitle: "Pose replay",
       frame: "Frame",
+      evidenceOn: "Problem frame",
+      beforeTitle: "This touch",
+      afterTitle: "After correction",
+      afterTag: "Placeholder",
+      teaseTitle: "Next · Signature Moves",
+      btnOpenSig: "Browse Signature Moves",
+      teaseNote: "Marseille turn and the rest of the catalog are preseeded. Recognition comes later and does not use the four fundamentals.",
+      uploadTitle: "Upload your video",
+      uploadDesc: "MP4 / MOV / WebM · side or diagonal view · keep it under ~15s",
+      skillLabel: "Skill (optional)",
+      auto: "Auto",
+      btnAnalyze: "Analyze video",
+      uploadHint: "GitHub Pages and Render do not include MediaPipe, so a video upload will not produce coach feedback. Use Demo mode above. Upload calls /analyze/video only when a local API with MediaPipe is running.",
+      sigTitle: "Signature Moves",
+      sigNote: "Preseed catalog: read the cue first. Recognition comes later and does not reuse the four fundamentals.",
+      sigPick: "Tap a card to see how to train the move.",
+      preseed: "Preseed",
+      preseedNote: "Preseed cue · recognition comes later.",
       advanced: "Developer options",
-      advancedNote: "The /docs page is API reference, not the product UI.",
-      statusReady: "Pick a video, then hit Analyze.",
-      statusDemo: "Sample loaded. Scrub or jump to the problem frame.",
+      advancedNote: "The /docs page is API reference, not the product UI. Demo clips load from fixtures/ with a relative URL that works on GitHub Pages and Render.",
+      statusReady: "Use Demo mode for the full coach story. Upload works only with a local API.",
+      statusClipReady: "Simulated clip is looping. Hit Analyze this clip.",
+      statusDemo: "Analysis complete. Scrub, or jump to the problem frame.",
       statusUploading: "Uploading and analyzing…",
       statusDone: "Analysis complete.",
       statusNeedFile: "Please choose a video file first.",
+      statusNoApi: "No video API on this page. Use Demo mode.",
+      statusUseDemo: "Use Demo mode instead.",
       statusApiFail: "Analysis failed: ",
+      statusFixtureFail: "Could not load the demo clip. Open this page from GitHub Pages /coach-ui/, Render /coach-ui/, or a static server at the repo root.",
+      noKeypoints: "No keypoints yet",
       plantMetric: "Plant-foot angle",
+      torsoMetric: "Torso lean",
+      deviation: "deviation",
       labels: {
-        "pass.inside": "Inside pass",
+        "pass.inside": "Inside-foot pass",
         "receive.first_touch": "First touch",
         "shot.instep": "Instep shot",
-        "dribble.close": "Close dribble",
+        "dribble.close": "Close control",
       },
       scores: { form: "Form", timing: "Timing", balance: "Balance", overall: "Overall" },
     },
   };
 
-  let lang = localStorage.getItem("aifc_lang") || "zh";
-  let state = { data: null, keypoints: null, frame: 0, evidenceIndex: null };
-  let selectedFile = null;
-  const $ = (id) => document.getElementById(id);
-  const t = () => I18N[lang];
-
   const COCO_EDGES = [
     [5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16],[0,5],[0,6],
   ];
 
+  let lang = localStorage.getItem("aifc_lang") || "zh";
+  let state = { data: null, keypoints: null, frame: 0, evidenceIndex: null, evidence: null, fps: 30 };
+  let preview = null;
+  let scenarioId = "pass.inside";
+  let selectedFile = null;
+  let demoToken = 0;
+  let clipTimer = null;
+  let clipGen = 0;
+  let sigCatalog = null;
+  let sigSelected = null;
+  const $ = (id) => document.getElementById(id);
+  const t = () => I18N[lang];
+
+  function coachBase() {
+    const url = new URL(window.location.href);
+    let path = url.pathname;
+    if (path.endsWith(".html")) path = path.slice(0, path.lastIndexOf("/") + 1);
+    else if (!path.endsWith("/")) path += "/";
+    url.pathname = path;
+    url.search = "";
+    url.hash = "";
+    return url.href;
+  }
+
+  function relUrl(path) {
+    return new URL(path, coachBase()).href;
+  }
+
+  function keypointsOf(data) {
+    if (!data) return null;
+    return data.keypoints || (data.pose && data.pose.keypoints) || null;
+  }
+
+  function evidenceFrom(data) {
+    if (data && data.evidence && data.evidence.frame_index != null) return data.evidence;
+    const rules = (data && (data.rules_fired || data.triggered_rules)) || [];
+    for (const r of rules) {
+      if (r.evidence_frame && r.evidence_frame.frame_index != null) return r.evidence_frame;
+    }
+    return null;
+  }
+
+  function metricLabel(name) {
+    if (name === "plant_foot_angle_deg") return t().plantMetric;
+    if (name === "torso_lean_deg") return t().torsoMetric;
+    return name || "";
+  }
+
+  function hotJoints(metric) {
+    if (metric === "plant_foot_angle_deg") return [13, 14, 15, 16];
+    if (metric === "torso_lean_deg") return [5, 6, 11, 12];
+    return [];
+  }
+
+  // Pass fixtures often omit arms (confidence 0). Hang a short arm from each
+  // shoulder for the drawing only — scores and rules still use the real joints.
+  function withDisplayArms(frameKp) {
+    if (!frameKp) return frameKp;
+    const frame = frameKp.map((p) => (p ? p.slice() : p));
+    const shown = (i) => {
+      const p = frame[i];
+      return p && p.length >= 2 && (p.length < 3 || Number(p[2]) > 0.2) && Number.isFinite(p[0]) && Number.isFinite(p[1]);
+    };
+    const hang = (sho, elb, wri, side) => {
+      if (shown(elb) || !shown(sho)) return;
+      const s = frame[sho];
+      const hipI = sho === 5 ? 11 : 12;
+      const drop = shown(hipI) ? Math.max(34, (frame[hipI][1] - s[1]) * 0.5) : 42;
+      const out = side * 12;
+      frame[elb] = [s[0] + out, s[1] + drop * 0.55, 0.4];
+      if (!shown(wri)) frame[wri] = [s[0] + out * 1.15, s[1] + drop, 0.4];
+    };
+    hang(5, 7, 9, -1);
+    hang(6, 8, 10, 1);
+    return frame;
+  }
+
+  function visibleIndex(frameKp) {
+    const vis = [];
+    if (!frameKp) return vis;
+    for (let i = 0; i < frameKp.length; i++) {
+      const p = frameKp[i];
+      if (!p || p.length < 2) continue;
+      const c = p.length > 2 ? Number(p[2]) : 1;
+      if (!(c > 0.2) || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) continue;
+      vis.push(i);
+    }
+    return vis;
+  }
+
+  function drawStick(canvasId, frameKp, opts) {
+    const canvas = $(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    const hot = new Set((opts && opts.hot) || []);
+    frameKp = withDisplayArms(frameKp);
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = "#1e293b";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(28, h - 26);
+    ctx.lineTo(w - 28, h - 26);
+    ctx.stroke();
+    const vis = visibleIndex(frameKp);
+    if (!vis.length) {
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "15px system-ui, sans-serif";
+      ctx.fillText((opts && opts.emptyText) || t().noKeypoints, 24, 48);
+      return;
+    }
+    const xs = vis.map((i) => frameKp[i][0]);
+    const ys = vis.map((i) => frameKp[i][1]);
+    const minX = Math.min.apply(null, xs);
+    const maxX = Math.max.apply(null, xs);
+    const minY = Math.min.apply(null, ys);
+    const maxY = Math.max.apply(null, ys);
+    const pad = 32;
+    const s = Math.min((w - 2 * pad) / Math.max(1e-3, maxX - minX), (h - 2 * pad) / Math.max(1e-3, maxY - minY));
+    const map = (x, y) => [pad + (x - minX) * s, pad + (y - minY) * s];
+    const visSet = new Set(vis);
+    ctx.lineCap = "round";
+    for (const pair of COCO_EDGES) {
+      const a = pair[0];
+      const b = pair[1];
+      if (!visSet.has(a) || !visSet.has(b)) continue;
+      const both = hot.has(a) && hot.has(b);
+      ctx.strokeStyle = both ? "#f472b6" : "#38bdf8";
+      ctx.lineWidth = both ? 5 : 3.5;
+      const p0 = map(frameKp[a][0], frameKp[a][1]);
+      const p1 = map(frameKp[b][0], frameKp[b][1]);
+      ctx.beginPath();
+      ctx.moveTo(p0[0], p0[1]);
+      ctx.lineTo(p1[0], p1[1]);
+      ctx.stroke();
+    }
+    for (const i of vis) {
+      const p = map(frameKp[i][0], frameKp[i][1]);
+      ctx.fillStyle = hot.has(i) ? "#f472b6" : "#e2e8f0";
+      ctx.beginPath();
+      ctx.arc(p[0], p[1], hot.has(i) ? 6.5 : 4.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function setStatus(msg, kind) {
+    const el = $("status");
+    el.textContent = msg || "";
+    el.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function setFrame(i) {
+    const T = state.keypoints ? state.keypoints.length : 1;
+    state.frame = Math.max(0, Math.min(T - 1, i | 0));
+    $("scrubber").max = String(Math.max(0, T - 1));
+    $("scrubber").value = String(state.frame);
+    $("frameNum").textContent = String(state.frame);
+    const fps = state.fps || 30;
+    $("timestamp").textContent = (state.frame / fps).toFixed(2) + "s";
+    const onEv = state.evidenceIndex != null && state.frame === state.evidenceIndex;
+    $("evidenceBadge").hidden = !onEv;
+    const ev = state.evidence;
+    if (ev) {
+      const bits = [metricLabel(ev.metric)];
+      if (ev.value != null && Number.isFinite(Number(ev.value))) bits.push(Number(ev.value).toFixed(0) + "°");
+      if (ev.deviation != null && Number.isFinite(Number(ev.deviation))) bits.push(t().deviation + " " + Number(ev.deviation).toFixed(0) + "°");
+      bits.push("#" + ev.frame_index);
+      $("metricLine").textContent = bits.filter(Boolean).join(" · ");
+    } else {
+      $("metricLine").textContent = "—";
+    }
+    drawStick("stick", state.keypoints ? state.keypoints[state.frame] : null, {
+      hot: onEv && ev ? hotJoints(ev.metric) : [],
+    });
+  }
+
+  function stopClip() {
+    clipGen += 1;
+    if (clipTimer) clearInterval(clipTimer);
+    clipTimer = null;
+  }
+
+  function playClip(kps, fps) {
+    stopClip();
+    const gen = clipGen;
+    if (!kps || !kps.length) {
+      drawStick("clipCanvas", null, {});
+      return;
+    }
+    let i = 0;
+    const step = Math.max(80, Math.round(1000 / Math.min(fps || 30, 12)));
+    const tick = () => {
+      if (gen !== clipGen) return;
+      drawStick("clipCanvas", kps[i], {});
+      const shownFps = fps || 30;
+      $("clipClock").textContent = (i / shownFps).toFixed(2) + "s / " + ((kps.length - 1) / shownFps).toFixed(2) + "s";
+      i = (i + 1) % kps.length;
+    };
+    tick();
+    clipTimer = setInterval(tick, step);
+  }
+
+  function updateClipLabels() {
+    const demo = (preview && preview.demo) || {};
+    const title = lang === "zh" ? (demo.title_zh || t().labels[scenarioId]) : (demo.title_en || t().labels[scenarioId]);
+    const view = lang === "zh" ? (demo.view_zh || "") : (demo.view_en || "");
+    const badge = lang === "zh" ? (demo.badge_zh || "模拟片段") : (demo.badge_en || "Simulated clip");
+    $("clipTitle").textContent = title || "";
+    $("clipView").textContent = view || "";
+    $("clipBadge").textContent = badge;
+  }
+
+  function renderScenarioChips() {
+    const row = $("scenarioRow");
+    row.innerHTML = "";
+    for (const s of SCENARIOS) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = t().labels[s.id] || s.id;
+      if (s.id === scenarioId) b.classList.add("on");
+      b.addEventListener("click", () => loadScenario(s.id));
+      row.appendChild(b);
+    }
+  }
+
+  function clearResults() {
+    state.data = null;
+    state.evidence = null;
+    state.evidenceIndex = null;
+    $("results").hidden = true;
+    $("beforeAfter").hidden = true;
+    $("btnJump").disabled = true;
+    $("btnJumpReplay").disabled = true;
+    $("progressBar").hidden = true;
+  }
+
+  function showAnalyzing(sub) {
+    $("results").hidden = false;
+    $("tipCard").className = "tip";
+    $("tipMain").textContent = t().analyzing;
+    $("tipSub").textContent = sub || t().stepPose;
+    $("progressBar").hidden = false;
+    $("progressFill").style.width = "0%";
+    $("actionName").textContent = "—";
+    $("confPct").textContent = "—";
+    $("scores").innerHTML = "";
+    $("beforeAfter").hidden = true;
+    $("btnJump").disabled = true;
+    $("btnJumpReplay").disabled = true;
+  }
+
+  function feedbackText(rule) {
+    if (!rule) return "";
+    return lang === "zh" ? (rule.feedback_zh || rule.feedback_en || "") : (rule.feedback_en || rule.feedback_zh || "");
+  }
+
+  function render(data) {
+    state.data = data;
+    state.keypoints = keypointsOf(data);
+    state.fps = (data.pose && data.pose.fps) || 30;
+    const ev = evidenceFrom(data);
+    state.evidence = ev;
+    state.evidenceIndex = ev ? ev.frame_index : null;
+    $("results").hidden = false;
+    $("progressBar").hidden = true;
+    $("btnJump").disabled = state.evidenceIndex == null;
+    $("btnJumpReplay").disabled = state.evidenceIndex == null;
+
+    const lid = data.label_id || "unknown";
+    $("actionName").textContent = t().labels[lid] || lid;
+    const conf = typeof data.confidence === "number" ? data.confidence : null;
+    $("confPct").textContent = conf != null ? Math.round(conf * 100) + "%" : "—";
+
+    const scores = data.scores || {};
+    $("scores").innerHTML = ["form", "timing", "balance", "overall"].filter((k) => scores[k] != null)
+      .map((k) => `<div class="score"><b>${scores[k]}</b><span>${t().scores[k]}</span></div>`).join("");
+
+    const rules = data.rules_fired || data.triggered_rules || [];
+    const tip = $("tipCard");
+    if (rules.length) {
+      tip.className = "tip";
+      const r = rules[0];
+      $("tipMain").textContent = feedbackText(r);
+      $("tipSub").textContent = lang === "zh" ? (r.feedback_en || "") : (r.feedback_zh || "");
+    } else {
+      tip.className = "tip ok";
+      $("tipMain").textContent = t().tipOk;
+      $("tipSub").textContent = "";
+    }
+
+    const demo = data.demo || {};
+    const afterRaw = lang === "zh" ? demo.after_zh : demo.after_en;
+    const after = afterRaw ? String(afterRaw).replace(/^(纠正后[:：]\s*|After correction:\s*)/, "") : "";
+    if (after) {
+      $("beforeAfter").hidden = false;
+      const evLine = ev
+        ? (metricLabel(ev.metric) + (ev.value != null ? " " + Number(ev.value).toFixed(0) + "°" : "") + " · #" + ev.frame_index)
+        : feedbackText(rules[0]);
+      $("beforeText").textContent = evLine;
+      $("afterText").textContent = after;
+    } else {
+      $("beforeAfter").hidden = true;
+    }
+
+    setFrame(state.evidenceIndex != null ? state.evidenceIndex : 0);
+    ensureCatalog().then((cat) => {
+      if (state.data !== data) return;
+      renderTease(cat);
+    }).catch(() => {
+      if (state.data === data) renderTease(null);
+    });
+  }
+
+  function jumpToEvidence() {
+    if (state.evidenceIndex == null) return;
+    setFrame(state.evidenceIndex);
+    const card = $("replayCard");
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.classList.remove("pulse");
+    void card.offsetWidth;
+    card.classList.add("pulse");
+  }
+
+  async function loadScenario(id) {
+    const token = ++demoToken;
+    scenarioId = id;
+    stopClip();
+    preview = null;
+    clearResults();
+    renderScenarioChips();
+    $("btnAnalyzeClip").disabled = true;
+    $("demoStage").hidden = false;
+    const scenario = SCENARIOS.find((s) => s.id === id) || SCENARIOS[0];
+    setStatus(lang === "zh" ? "正在载入模拟片段…" : "Loading simulated clip…");
+    try {
+      const res = await fetch(relUrl("../fixtures/" + scenario.file));
+      if (!res.ok) throw new Error(res.status + " " + res.statusText);
+      const data = await res.json();
+      if (token !== demoToken) return;
+      preview = data;
+      updateClipLabels();
+      const kps = keypointsOf(data);
+      playClip(kps, (data.pose && data.pose.fps) || 30);
+      $("btnAnalyzeClip").disabled = false;
+      setStatus(t().statusClipReady, "ok");
+    } catch (e) {
+      if (token !== demoToken) return;
+      setStatus(t().statusFixtureFail + " (" + (e.message || e) + ")", "err");
+    }
+  }
+
+  function startDemo() {
+    setMode("fund");
+    $("demoStage").hidden = false;
+    loadScenario("pass.inside").then(() => {
+      $("demoStage").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  async function analyzeClip() {
+    if (!preview) return;
+    const token = ++demoToken;
+    const data = preview;
+    stopClip();
+    const kps = keypointsOf(data);
+    state.keypoints = kps;
+    state.fps = (data.pose && data.pose.fps) || 30;
+    state.evidence = null;
+    state.evidenceIndex = null;
+    if (kps && kps.length) {
+      drawStick("clipCanvas", kps[Math.min(kps.length - 1, 4)], {});
+      setFrame(Math.min(kps.length - 1, 4));
+    }
+    $("btnAnalyzeClip").disabled = true;
+    showAnalyzing(t().stepPose);
+    setStatus(t().analyzing);
+    const steps = [t().stepPose, t().stepScore, t().stepRules];
+    const started = performance.now();
+    const duration = 1200;
+    await new Promise((resolve) => {
+      const tick = () => {
+        if (token !== demoToken) return resolve();
+        const p = Math.min(1, (performance.now() - started) / duration);
+        $("progressFill").style.width = Math.round(p * 100) + "%";
+        $("tipMain").textContent = t().analyzing;
+        $("tipSub").textContent = steps[Math.min(steps.length - 1, Math.floor(p * steps.length))];
+        if (p < 1) requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+    if (token !== demoToken) return;
+    render(data);
+    $("btnAnalyzeClip").disabled = false;
+    setStatus(t().statusDemo, "ok");
+    $("feedbackCard").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function videoEndpoints() {
+    const urls = [];
+    const host = location.hostname || "";
+    const pages = host.endsWith("github.io");
+    if (!pages && location.protocol.indexOf("http") === 0) {
+      urls.push(new URL("/analyze/video", location.origin).href);
+    }
+    const local = "http://127.0.0.1:8000/analyze/video";
+    const localPage = host === "localhost" || host === "127.0.0.1";
+    if (localPage && urls.indexOf(local) === -1) urls.push(local);
+    return urls;
+  }
+
+  function errorDetail(data, fallback) {
+    if (!data) return fallback || "";
+    if (typeof data.detail === "string") return data.detail;
+    if (Array.isArray(data.detail)) {
+      return data.detail.map((d) => (d && (d.msg || d.message)) || "").filter(Boolean).join("; ") || fallback || "";
+    }
+    return fallback || "";
+  }
+
+  async function analyzeFile(file) {
+    if (!file) { setStatus(t().statusNeedFile, "err"); return; }
+    const endpoints = videoEndpoints();
+    if (!endpoints.length) { setStatus(t().statusNoApi, "err"); return; }
+    setMode("fund");
+    showAnalyzing(t().statusUploading);
+    setStatus(t().statusUploading);
+    $("btnAnalyze").disabled = true;
+    drawStick("stick", null, { emptyText: t().analyzing });
+    let lastMessage = "";
+    for (let i = 0; i < endpoints.length; i++) {
+      const fd = new FormData();
+      fd.append("file", file);
+      const skill = $("skillSelect").value;
+      if (skill) fd.append("label_id", skill);
+      fd.append("max_frames", "120");
+      try {
+        const res = await fetch(endpoints[i], { method: "POST", body: fd });
+        const text = await res.text();
+        let data = null;
+        try { data = JSON.parse(text); } catch (parseErr) { data = null; }
+        if (!res.ok) throw new Error(errorDetail(data, res.status + " " + res.statusText));
+        if (!data) throw new Error(res.statusText || "empty response");
+        render(data);
+        setStatus(t().statusDone, "ok");
+        $("feedbackCard").scrollIntoView({ behavior: "smooth", block: "center" });
+        $("btnAnalyze").disabled = !selectedFile;
+        return;
+      } catch (e) {
+        lastMessage = (e && e.message) ? e.message : String(e);
+      }
+    }
+    $("tipMain").textContent = t().tipEmpty;
+    $("tipSub").textContent = "";
+    $("progressBar").hidden = true;
+    const hint = /failed to fetch|networkerror|load failed|mediapipe|not installed|503|404/i.test(lastMessage)
+      ? (" " + t().statusUseDemo) : "";
+    setStatus(t().statusApiFail + lastMessage + hint, "err");
+    $("btnAnalyze").disabled = !selectedFile;
+  }
+
+  function makeMoveCard(m, stay) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "sig-card" + (sigSelected === m.id ? " on" : "");
+    card.dataset.id = m.id;
+    const badge = document.createElement("span");
+    badge.className = "preseed";
+    badge.textContent = t().preseed;
+    const title = document.createElement("h3");
+    title.textContent = lang === "zh" ? (m.name_zh || m.id) : (m.name_en || m.id);
+    const cue = document.createElement("p");
+    cue.textContent = lang === "zh" ? (m.cue_zh || "") : (m.cue_en || "");
+    const stars = document.createElement("div");
+    stars.className = "stars";
+    stars.textContent = (m.star_flavor || []).join(" · ");
+    card.append(badge, title, cue, stars);
+    card.addEventListener("click", () => {
+      sigSelected = m.id;
+      if (stay) {
+        fillSigTip(m);
+        document.querySelectorAll(".sig-card").forEach((c) => c.classList.toggle("on", c.dataset.id === m.id));
+      } else {
+        openSignature(m.id);
+      }
+    });
+    return card;
+  }
+
+  function renderMoveGrid(host, moves, stay) {
+    host.innerHTML = "";
+    for (const m of moves) host.appendChild(makeMoveCard(m, stay));
+  }
+
+  function renderTease(cat) {
+    const moves = (cat && cat.moves) || [];
+    const picked = FEATURED.map((id) => moves.find((m) => m.id === id)).filter(Boolean);
+    const list = picked.length ? picked : moves.slice(0, 3);
+    $("teaseNote").textContent = (cat && (lang === "zh" ? cat.hook_zh : cat.hook_en)) || t().teaseNote;
+    renderMoveGrid($("teaseGrid"), list, false);
+  }
+
+  function renderSignature(cat) {
+    if (!cat) return;
+    $("sigHook").textContent = lang === "zh" ? (cat.hook_zh || "") : (cat.hook_en || "");
+    $("sigStatus").textContent = lang === "zh" ? (cat.status_zh || t().preseed) : (cat.status_en || t().preseed);
+    renderMoveGrid($("sigGrid"), cat.moves || [], true);
+    const selected = (cat.moves || []).find((m) => m.id === sigSelected);
+    if (selected) fillSigTip(selected);
+    else {
+      $("sigTipMain").textContent = t().sigPick;
+      $("sigTipSub").textContent = "";
+    }
+  }
+
+  function fillSigTip(m) {
+    const rules = m.rules || [];
+    const tip = rules.find((r) => r.label_id === m.id) || rules[0];
+    $("sigTipMain").textContent = lang === "zh" ? (m.cue_zh || m.name_zh || "") : (m.cue_en || m.name_en || "");
+    const fb = tip ? (lang === "zh" ? (tip.feedback_zh || tip.feedback_en || "") : (tip.feedback_en || tip.feedback_zh || "")) : "";
+    $("sigTipSub").textContent = fb ? (fb + " · " + t().preseedNote) : t().preseedNote;
+  }
+
+  async function loadStaticCatalog() {
+    const res = await fetch(relUrl("../fixtures/signature_catalog.json"));
+    if (!res.ok) throw new Error(res.status + " " + res.statusText);
+    return res.json();
+  }
+
+  async function ensureCatalog() {
+    if (sigCatalog) return sigCatalog;
+    try {
+      sigCatalog = await loadStaticCatalog();
+    } catch (fixtureErr) {
+      const catRes = await fetch(relUrl("../labels/signature_moves.json"));
+      if (!catRes.ok) throw fixtureErr;
+      const catalog = await catRes.json();
+      let rulesDoc = { rules: [] };
+      try {
+        const rulesRes = await fetch(relUrl("../rules/signature_rules.json"));
+        if (rulesRes.ok) rulesDoc = await rulesRes.json();
+      } catch (ignore) { /* catalog still renders */ }
+      const byLabel = {};
+      for (const rule of (rulesDoc.rules || [])) {
+        const id = rule.label_id || "";
+        byLabel[id] = byLabel[id] || [];
+        byLabel[id].push(rule);
+      }
+      sigCatalog = {
+        status: "preseed",
+        status_zh: "预置",
+        status_en: "Preseed",
+        hook_zh: catalog.product_hook_zh || "",
+        hook_en: catalog.product_hook_en || "",
+        moves: (catalog.moves || []).map((m) => Object.assign({}, m, {
+          status: "preseed",
+          rules: (byLabel[m.id] || []).concat(byLabel["sig.*"] || []),
+        })),
+      };
+    }
+    return sigCatalog;
+  }
 
   async function loadSignatureMoves() {
     try {
-      const res = await fetch(API + "/signature-moves");
-      const data = await res.json();
-      $("sigHook").textContent = lang === "zh" ? (data.hook_zh || "") : (data.hook_en || "");
-      const grid = $("sigGrid");
-      grid.innerHTML = "";
-      for (const m of (data.moves || [])) {
-        const card = document.createElement("button");
-        card.type = "button";
-        card.className = "sig-card";
-        card.innerHTML = `<h3>${lang==="zh"?m.name_zh:m.name_en}</h3>
-          <p>${lang==="zh"?m.cue_zh:m.cue_en}</p>
-          <div class="stars">${(m.star_flavor||[]).join(" · ")}</div>`;
-        card.onclick = () => {
-          grid.querySelectorAll(".sig-card").forEach(c => c.classList.remove("on"));
-          card.classList.add("on");
-          const rules = m.rules || [];
-          const tip = rules[0];
-          $("sigTipMain").textContent = lang==="zh" ? (m.cue_zh||"") : (m.cue_en||"");
-          $("sigTipSub").textContent = tip
-            ? (lang==="zh" ? (tip.feedback_zh||tip.feedback_en||"") : (tip.feedback_en||tip.feedback_zh||""))
-            : ((m.aka||[]).join(" / "));
-          setStatus((lang==="zh"?"已选择：":"Selected: ") + (lang==="zh"?m.name_zh:m.name_en), "ok");
-        };
-        grid.appendChild(card);
-      }
+      const cat = await ensureCatalog();
+      renderSignature(cat);
     } catch (e) {
-      $("sigHook").textContent = (lang==="zh"?"目录加载失败：":"Catalog failed: ") + e.message;
+      $("sigHook").textContent = (lang === "zh" ? "目录加载失败：" : "Catalog failed: ") + (e.message || e);
     }
+  }
+
+  function openSignature(id) {
+    if (id) sigSelected = id;
+    setMode("sig");
+    requestAnimationFrame(() => {
+      $("panelSig").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   function setMode(mode) {
@@ -303,11 +1032,13 @@
     $("modeSig").classList.toggle("on", mode === "sig");
     localStorage.setItem("aifc_mode", mode);
     if (mode === "sig") loadSignatureMoves();
-    else setStatus(t().statusReady);
   }
 
-  $("modeFund").onclick = () => setMode("fund");
-  $("modeSig").onclick = () => setMode("sig");
+  function fillSkillOptions() {
+    $("skillSelect").querySelectorAll("option").forEach((opt) => {
+      opt.textContent = opt.value ? (t().labels[opt.value] || opt.value) : t().auto;
+    });
+  }
 
   function applyI18n() {
     document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
@@ -317,165 +1048,49 @@
     });
     $("langZh").classList.toggle("on", lang === "zh");
     $("langEn").classList.toggle("on", lang === "en");
-    // refresh tip/action texts from current data
+    fillSkillOptions();
+    renderScenarioChips();
+    if (preview) updateClipLabels();
     if (state.data) render(state.data);
-    else setStatus(t().statusReady);
-  }
-
-  function setStatus(msg, kind) {
-    const el = $("status");
-    el.textContent = msg || "";
-    el.className = "status" + (kind ? " " + kind : "");
-  }
-
-  function evidenceFrom(data) {
-    if (data?.evidence?.frame_index != null) return data.evidence;
-    for (const r of (data?.rules_fired || data?.triggered_rules || [])) {
-      if (r.evidence_frame?.frame_index != null) return r.evidence_frame;
-    }
-    return null;
-  }
-
-  function drawStick(frameKp) {
-    const canvas = $("stick");
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (!frameKp?.length) {
-      ctx.fillStyle = "#94a3b8";
-      ctx.font = "15px system-ui";
-      ctx.fillText(lang === "zh" ? "暂无姿态关键节点" : "No keypoints yet", 24, 48);
-      return;
-    }
-    const xs = frameKp.map((p) => p[0]), ys = frameKp.map((p) => p[1]);
-    const minX = Math.min(...xs), maxX = Math.max(...xs);
-    const minY = Math.min(...ys), maxY = Math.max(...ys);
-    const pad = 28;
-    const s = Math.min((canvas.width - 2*pad)/Math.max(1e-3,maxX-minX), (canvas.height-2*pad)/Math.max(1e-3,maxY-minY));
-    const map = (x,y) => [pad+(x-minX)*s, pad+(y-minY)*s];
-    ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 3.5; ctx.lineCap = "round";
-    for (const [a,b] of COCO_EDGES) {
-      if (!frameKp[a] || !frameKp[b]) continue;
-      const [x0,y0]=map(frameKp[a][0],frameKp[a][1]);
-      const [x1,y1]=map(frameKp[b][0],frameKp[b][1]);
-      ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
-    }
-    for (let i=0;i<frameKp.length;i++) {
-      const [x,y]=map(frameKp[i][0],frameKp[i][1]);
-      ctx.fillStyle = (i===15||i===16) ? "#f472b6" : "#e2e8f0";
-      ctx.beginPath(); ctx.arc(x,y,4.5,0,Math.PI*2); ctx.fill();
+    if (sigCatalog && document.body.classList.contains("mode-sig")) renderSignature(sigCatalog);
+    if (sigCatalog && !$("results").hidden && state.data) renderTease(sigCatalog);
+    const jumping = !$("progressBar").hidden;
+    if (jumping) {
+      $("tipMain").textContent = t().analyzing;
     }
   }
 
-  function setFrame(i) {
-    const T = state.keypoints ? state.keypoints.length : (state.data?.pose?.T || 1);
-    state.frame = Math.max(0, Math.min(T-1, i|0));
-    $("scrubber").value = String(state.frame);
-    $("frameNum").textContent = String(state.frame);
-    const fps = state.data?.pose?.fps || 30;
-    $("timestamp").textContent = (state.frame / fps).toFixed(2) + "s";
-    drawStick(state.keypoints ? state.keypoints[state.frame] : null);
-  }
-
-  function render(data) {
-    state.data = data;
-    state.keypoints = data.keypoints || data.pose?.keypoints || null;
-    const ev = evidenceFrom(data);
-    state.evidenceIndex = ev ? ev.frame_index : null;
-    $("btnJump").disabled = state.evidenceIndex == null;
-
-    const lid = data.label_id || "unknown";
-    $("actionName").textContent = t().labels[lid] || lid;
-    const conf = typeof data.confidence === "number" ? data.confidence : null;
-    $("confPct").textContent = conf != null ? Math.round(conf*100) + "%" : "—";
-
-    const scores = data.scores || {};
-    $("scores").innerHTML = ["form","timing","balance","overall"].filter(k=>scores[k]!=null)
-      .map(k => `<div class="score"><b>${scores[k]}</b><span>${t().scores[k]}</span></div>`).join("");
-
-    const rules = data.rules_fired || data.triggered_rules || [];
-    const tip = $("tipCard");
-    if (rules.length) {
-      tip.className = "tip";
-      const r = rules[0];
-      $("tipMain").textContent = lang === "zh" ? (r.feedback_zh || r.feedback_en || "") : (r.feedback_en || r.feedback_zh || "");
-      $("tipSub").textContent = lang === "zh" ? (r.feedback_en || "") : (r.feedback_zh || "");
-    } else {
-      tip.className = "tip ok";
-      $("tipMain").textContent = t().tipOk;
-      $("tipSub").textContent = "";
-    }
-
-    if (ev) {
-      const metric = ev.metric === "plant_foot_angle_deg" ? t().plantMetric : (ev.metric || "");
-      $("metricLine").textContent = metric + (ev.value!=null ? ` ${Number(ev.value).toFixed(0)}°` : "") + ` · #${ev.frame_index}`;
-    } else $("metricLine").textContent = "—";
-
-    const T = state.keypoints ? state.keypoints.length : (data.pose?.T || 1);
-    $("scrubber").max = String(Math.max(0, T-1));
-    setFrame(state.evidenceIndex != null ? state.evidenceIndex : 0);
-  }
-
-  async function loadSample() {
-    setStatus(lang==="zh"?"加载样例…":"Loading sample…");
-    try {
-      const res = await fetch("../fixtures/demo_analyze_response.json");
-      if (!res.ok) throw new Error(res.statusText);
-      render(await res.json());
-      setStatus(t().statusDemo, "ok");
-    } catch (e) {
-      setStatus(t().statusApiFail + e.message, "err");
-    }
-  }
-
-  async function analyzeFile(file) {
-    if (!file) { setStatus(t().statusNeedFile, "err"); return; }
-    setStatus(t().statusUploading);
-    $("btnAnalyze").disabled = true;
-    const fd = new FormData();
-    fd.append("file", file);
-    const skill = $("skillSelect").value;
-    if (skill) fd.append("label_id", skill);
-    fd.append("max_frames", "120");
-    try {
-      const res = await fetch(API + "/analyze/video", { method: "POST", body: fd });
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch { data = { detail: text }; }
-      if (!res.ok) throw new Error(data.detail || res.statusText);
-      render(data);
-      setStatus(t().statusDone, "ok");
-    } catch (e) {
-      setStatus(t().statusApiFail + e.message, "err");
-    } finally {
-      $("btnAnalyze").disabled = !selectedFile;
-    }
-  }
-
-  $("langZh").onclick = () => { lang = "zh"; localStorage.setItem("aifc_lang", lang); applyI18n(); if (document.body.classList.contains("mode-sig")) loadSignatureMoves(); };
-  $("langEn").onclick = () => { lang = "en"; localStorage.setItem("aifc_lang", lang); applyI18n(); if (document.body.classList.contains("mode-sig")) loadSignatureMoves(); };
-  $("btnDemo").onclick = loadSample;
-  $("btnJump").onclick = () => { if (state.evidenceIndex != null) setFrame(state.evidenceIndex); };
+  $("langZh").onclick = () => { lang = "zh"; localStorage.setItem("aifc_lang", lang); applyI18n(); };
+  $("langEn").onclick = () => { lang = "en"; localStorage.setItem("aifc_lang", lang); applyI18n(); };
+  $("modeFund").onclick = () => setMode("fund");
+  $("modeSig").onclick = () => setMode("sig");
+  $("btnDemo").onclick = () => startDemo();
+  $("btnAnalyzeClip").onclick = () => analyzeClip();
+  $("btnJump").onclick = () => jumpToEvidence();
+  $("btnJumpReplay").onclick = () => jumpToEvidence();
+  $("btnOpenSig").onclick = () => openSignature("sig.marseille_turn");
   $("scrubber").oninput = (e) => setFrame(Number(e.target.value));
   $("fileInput").onchange = (e) => {
     selectedFile = e.target.files && e.target.files[0];
     $("btnAnalyze").disabled = !selectedFile;
-    if (selectedFile) setStatus((lang==="zh"?"已选择：":"Selected: ") + selectedFile.name);
+    if (selectedFile) setStatus((lang === "zh" ? "已选择：" : "Selected: ") + selectedFile.name);
   };
   $("btnAnalyze").onclick = () => analyzeFile(selectedFile);
 
   const dz = $("dropzone");
-  ["dragenter","dragover"].forEach(ev => dz.addEventListener(ev, (e)=>{e.preventDefault(); dz.classList.add("drag");}));
-  ["dragleave","drop"].forEach(ev => dz.addEventListener(ev, (e)=>{e.preventDefault(); dz.classList.remove("drag");}));
+  ["dragenter", "dragover"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("drag"); }));
   dz.addEventListener("drop", (e) => {
     const f = e.dataTransfer.files && e.dataTransfer.files[0];
     if (!f) return;
     selectedFile = f;
-    $("fileInput").files = e.dataTransfer.files;
+    try { $("fileInput").files = e.dataTransfer.files; } catch (ignore) { /* some browsers block this */ }
     $("btnAnalyze").disabled = false;
-    setStatus((lang==="zh"?"已选择：":"Selected: ") + f.name);
+    setStatus((lang === "zh" ? "已选择：" : "Selected: ") + f.name);
   });
 
   applyI18n();
+  setStatus(t().statusReady);
   setMode(localStorage.getItem("aifc_mode") === "sig" ? "sig" : "fund");
 })();
   </script>

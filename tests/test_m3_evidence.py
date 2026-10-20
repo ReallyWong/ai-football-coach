@@ -91,3 +91,52 @@ def test_demo_analyze_fixture_has_evidence():
     assert data["evidence"]["frame_index"] >= 0
     assert data["rules_fired"][0]["evidence_frame"]["frame_index"] == data["evidence"]["frame_index"]
     assert "keypoints" in data
+    assert data["demo"]["scenario_id"] == "pass.inside"
+    assert "支撑脚" in data["rules_fired"][0]["feedback_zh"]
+    assert "纠正后" in data["demo"]["after_zh"]
+
+
+def test_demo_shot_fixture_matches_torso_rule():
+    path = REPO_ROOT / "fixtures" / "demo_shot_instep_response.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["label_id"] == "shot.instep"
+    assert data["demo"]["scenario_id"] == "shot.instep"
+    kps = np.asarray(data["keypoints"], dtype=np.float64)
+    assert kps.ndim == 3 and kps.shape[1] == 17
+    assert kps.shape[0] == data["pose"]["T"]
+    metrics = compute_geometric_metrics(kps)
+    fired = evaluate_rules(
+        "shot.instep",
+        metrics,
+        signals={"confidence": float(data["confidence"])},
+        metric_series_map={
+            "torso_lean_deg": torso_lean_series(kps),
+            "plant_foot_angle_deg": plant_foot_angle_series(kps),
+        },
+        fps=float(data["pose"]["fps"]),
+    )
+    tip = next(r for r in fired if r["id"] == "shot.instep.lean")
+    assert tip["evidence_frame"]["frame_index"] == data["evidence"]["frame_index"]
+    assert data["rules_fired"][0]["id"] == "shot.instep.lean"
+    assert "上身" in data["rules_fired"][0]["feedback_zh"]
+    assert data["pose"]["keypoints"]
+
+
+def test_signature_catalog_fixture_is_preseed():
+    path = REPO_ROOT / "fixtures" / "signature_catalog.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["status"] == "preseed"
+    assert data["moves"][0]["id"] == "sig.marseille_turn"
+    assert data["moves"][0]["name_zh"] == "马赛回旋"
+    assert data["moves"][0]["rules"], "catalog joins cue rules for the product cards"
+    assert all(m.get("status") == "preseed" for m in data["moves"])
+
+
+def test_coach_ui_demo_mode_is_static():
+    html = (REPO_ROOT / "coach-ui" / "index.html").read_text(encoding="utf-8")
+    assert "演示模式" in html
+    assert "正在分析" in html
+    assert "demo_shot_instep_response.json" in html
+    assert "signature_catalog.json" in html
+    assert "http://127.0.0.1:8000/signature-moves" not in html
+    assert "/analyze/video" in html
