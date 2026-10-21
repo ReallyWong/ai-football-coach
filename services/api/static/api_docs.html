@@ -49,7 +49,7 @@
   <div class="wrap">
     <div class="top">
       <div>
-        <div class="pill" id="ver">v0.3</div>
+        <div class="pill" id="ver">v0.4</div>
       </div>
       <div class="lang">
         <button type="button" id="langZh" class="on">中文</button>
@@ -57,7 +57,7 @@
       </div>
     </div>
     <h1 data-i18n="title">AI Football Coach · API 文档</h1>
-    <p class="lead" data-i18n="lead">给产品演示和开发对接用。日常纠错请打开 Coach UI；本页说明三个接口怎么用。</p>
+    <p class="lead" data-i18n="lead">给产品演示和开发对接用。日常纠错请打开 Coach UI；射门切片只看分数和一句纠错。</p>
     <div class="links">
       <a class="btn" href="http://127.0.0.1:8765/coach-ui/" target="_blank" rel="noopener" data-i18n="openUi">打开 Coach UI</a>
       <a class="ghost btn" href="/openapi.json" target="_blank" rel="noopener">openapi.json</a>
@@ -108,6 +108,19 @@
     </section>
 
     <section class="card">
+      <h2><span class="method post">POST</span><span class="path">/analyze/shot</span></h2>
+      <p class="desc" data-i18n="shotDesc">仅射门。返回 0–100 和一句中文纠错。不返回传球、盘带或停球。</p>
+      <p class="tiny" data-i18n="shotBody">Body JSON 示例：</p>
+      <pre>{
+  "pose_path": "fixtures/demo_shot_instep_pose.json"
+}</pre>
+      <div class="row"><button type="button" class="btn" id="btnShot" data-i18n="tryShot">用射门样例跑一次</button></div>
+      <pre id="shotOut" hidden></pre>
+      <p class="status" id="shotStatus"></p>
+      <p class="tiny" data-i18n="shotNote">视频姿态要 OpenCV 5（requirements-comp.txt）。当前 Render 镜像未装 OpenCV，关键点接口仍可用。S3 上传是下一步。</p>
+    </section>
+
+    <section class="card">
       <h2 data-i18n="fieldsTitle">返回字段（人话）</h2>
       <ul class="desc" id="fieldsList" style="margin:0;padding-left:1.1rem"></ul>
     </section>
@@ -117,7 +130,7 @@
   const I18N = {
     zh: {
       title: "AI Football Coach · API 文档",
-      lead: "给产品演示和开发对接用。日常纠错请打开 Coach UI；本页说明三个接口怎么用。",
+      lead: "给产品演示和开发对接用。日常纠错请打开 Coach UI；射门切片只看分数和一句纠错。",
       openUi: "打开 Coach UI",
       swagger: "经典 Swagger",
       healthDesc: "检查服务是否在跑、模型文件是否就绪。",
@@ -129,6 +142,10 @@
       skill: "技术动作（可选）",
       tryVideo: "上传并分析",
       videoNote: "也可用 Coach UI 里的上传区，体验更友好。",
+      shotDesc: "仅射门。返回 0–100 和一句中文纠错。不返回传球、盘带或停球。",
+      shotBody: "Body JSON 示例：",
+      tryShot: "用射门样例跑一次",
+      shotNote: "视频姿态要 OpenCV 5（requirements-comp.txt）。当前 Render 镜像未装 OpenCV，关键点接口仍可用。S3 上传是下一步。",
       fieldsTitle: "返回字段（人话）",
       fields: [
         "label_id / confidence — 识别出的技术动作与把握",
@@ -136,6 +153,9 @@
         "triggered_rules — 触发的纠错（中英 feedback）",
         "evidence — 建议跳转的问题帧",
         "keypoints — 火柴人回放用的骨架序列",
+        "POST /analyze/shot 的 score — 射门 0–100；重录时为空",
+        "POST /analyze/shot 的 coaching_zh — 只此一句纠错",
+        "agent.next_action — 重录、布置练习，或直接给分",
       ],
       ok: "成功",
       fail: "失败：",
@@ -144,7 +164,7 @@
     },
     en: {
       title: "AI Football Coach · API docs",
-      lead: "For demos and integration. Use Coach UI for coaching; this page explains the three endpoints.",
+      lead: "For demos and integration. Use Coach UI for coaching. The shot slice returns a score and one sentence.",
       openUi: "Open Coach UI",
       swagger: "Classic Swagger",
       healthDesc: "Liveness check and whether the ONNX model file is present.",
@@ -156,6 +176,10 @@
       skill: "Skill (optional)",
       tryVideo: "Upload & analyze",
       videoNote: "Or use the upload zone in Coach UI for a friendlier flow.",
+      shotDesc: "Shooting only. Returns 0–100 and one correction. It does not return pass, dribble, or first touch.",
+      shotBody: "Example JSON body:",
+      tryShot: "Run shot sample",
+      shotNote: "Video pose needs OpenCV 5 (requirements-comp.txt). The current Render image does not install it; the keypoint route still works. S3 upload is the next step.",
       fieldsTitle: "Response fields (plain English)",
       fields: [
         "label_id / confidence — detected skill and confidence",
@@ -163,6 +187,9 @@
         "triggered_rules — corrections (feedback_zh / feedback_en)",
         "evidence — problem frame to jump to",
         "keypoints — skeleton sequence for the stick figure",
+        "POST /analyze/shot score — 0–100, empty when the player should re-record",
+        "POST /analyze/shot coaching_zh — the one correction sentence",
+        "agent.next_action — re-record, assign a drill, or accept and coach",
       ],
       ok: "OK",
       fail: "Failed: ",
@@ -220,9 +247,23 @@
 
   $("langZh").onclick=()=>{lang="zh";localStorage.setItem("aifc_api_lang",lang);apply()};
   $("langEn").onclick=()=>{lang="en";localStorage.setItem("aifc_api_lang",lang);apply()};
+  async function postShot(){
+    $("shotStatus").textContent=t().running; $("shotStatus").className="status";
+    try{
+      const r=await fetch("/analyze/shot",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({pose_path:"fixtures/demo_shot_instep_pose.json"})});
+      const j=await r.json();
+      if(!r.ok) throw new Error(j.detail||r.statusText);
+      const slim={label_id:j.label_id,score:j.score,coaching_zh:j.coaching_zh,agent:j.agent,metrics:j.metrics};
+      $("shotOut").hidden=false; $("shotOut").textContent=JSON.stringify(slim,null,2);
+      $("shotStatus").textContent=t().ok; $("shotStatus").className="status ok";
+    }catch(e){ $("shotStatus").textContent=t().fail+e.message; $("shotStatus").className="status err"; }
+  }
+
   $("btnHealth").onclick=getHealth;
   $("btnAnalyze").onclick=postAnalyze;
   $("btnVideo").onclick=postVideo;
+  $("btnShot").onclick=postShot;
   apply();
 })();
   </script>

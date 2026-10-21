@@ -1,7 +1,8 @@
-"""Render image installs requirements-deploy.txt and does not include torch.
+"""Render image installs requirements-deploy.txt and does not include torch or OpenCV.
 
 Importing the API must succeed in that environment. Train/export still require
 torch and fail with ImportError only when SkeletonProbe is constructed.
+Video shot pose imports cv2 only inside the video route.
 """
 from __future__ import annotations
 
@@ -17,8 +18,9 @@ import builtins
 _real_import = builtins.__import__
 
 def _guard(name, globals=None, locals=None, fromlist=(), level=0):
-    if name == "torch" or name.startswith("torch."):
-        raise ModuleNotFoundError("No module named 'torch'")
+    root = name.split(".", 1)[0]
+    if root in {"torch", "cv2"}:
+        raise ModuleNotFoundError(f"No module named '{root}'")
     return _real_import(name, globals, locals, fromlist, level)
 
 builtins.__import__ = _guard

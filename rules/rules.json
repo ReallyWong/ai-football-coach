@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "dual_track": {
     "geometric": "Pose-derived angles / distances from COCO-17 (pipeline/metrics)",
     "model": "ST-GCN++ class scores or confidence signals — not interchangeable with geometric metrics"
@@ -26,6 +26,17 @@
       "severity": "tip",
       "feedback_zh": "上身后仰过多，容易打飞；微微前倾压球。",
       "feedback_en": "Too much back lean — slight forward lean helps keep the shot down."
+    },
+    {
+      "id": "shot.instep.plant_foot",
+      "label_id": "shot.instep",
+      "from": "geometric",
+      "metric": "plant_foot_angle_deg",
+      "op": "outside",
+      "range": [70, 110],
+      "severity": "warn",
+      "feedback_zh": "支撑脚没有指向球门，射门容易打偏；把支撑脚脚尖对准目标。",
+      "feedback_en": "Plant foot is not aimed at the goal — point the toes toward the target before you strike."
     },
     {
       "id": "any.low_confidence",

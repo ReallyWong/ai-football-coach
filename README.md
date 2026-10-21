@@ -97,6 +97,14 @@ python -m http.server 8765   # then open /coach-ui/
 
 See `docs/eval.md` and `docs/ruvview_exploration.md`.
 
+## OpenCV AI Competition 2026
+
+NATI 哪踢 / ScoutMind. This competition slice is **instep shooting only** (`shot.instep`): score 0–100 and one coaching sentence.
+
+`POST /analyze/shot` is the shooting endpoint. Video pose prefers OpenCV 5 DNN (MoveNet or YOLO-pose ONNX) from `requirements-comp.txt` (`opencv-python-headless==5.0.0.93`). The live Render image stays on `requirements-deploy.txt` (no torch, no OpenCV) until a second service exists.
+
+Plan, agent policy, and the remaining AWS / report checklist: [docs/opencv26/README.md](docs/opencv26/README.md).
+
 ## License
 
 MIT
