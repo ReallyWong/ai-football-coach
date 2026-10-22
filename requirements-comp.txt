@@ -4,7 +4,8 @@
 # That image stays torch-free and does not install OpenCV until a second
 # Render service exists. Video routes lazy-import cv2 and return 503 there.
 #
-# boto3 is listed for PR-B (S3). The API does not import it yet.
+# boto3 is optional at process start. POST /analyze/shot imports it only when
+# the body includes s3_key. The live image does not install this file.
 
 numpy>=1.26,<3
 onnxruntime>=1.16

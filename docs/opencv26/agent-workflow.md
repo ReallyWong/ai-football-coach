@@ -20,7 +20,7 @@ sequenceDiagram
   B->>U: score or no score, one sentence, next_action
 ```
 
-PR-A runs `A` inside `pipeline/shot/scoring.py`. PR-B moves that same function to Lambda and adds `B` and S3. Bedrock writes the sentence. It does not change the action.
+`decide_next_action` still runs inside `pipeline/shot/scoring.py`. The phone can PUT the clip through the live presign API, and `POST /analyze/shot` can GetObject that key. Bedrock does not write the sentence yet, and the trace is not stored.
 
 ## Observation
 

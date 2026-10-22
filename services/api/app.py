@@ -43,6 +43,12 @@ from pipeline.pose.load_mediapipe_json import load_mediapipe_json  # noqa: E402
 from pipeline.pose.video_to_mp33 import video_to_mp33  # noqa: E402
 from pipeline.rules_engine import evaluate_rules  # noqa: E402
 from pipeline.shot.scoring import SHOT_LABEL_ID, score_shot_clip  # noqa: E402
+from services.api.shot_s3 import (  # noqa: E402
+    ShotStorageError,
+    download_shot_object,
+    shot_bucket,
+    shot_s3_status,
+)
 
 DEFAULT_ONNX = REPO_ROOT / "models" / "youth_football_probe.onnx"
 
@@ -338,6 +344,7 @@ def _shot_health() -> dict[str, Any]:
         "routes": ["/analyze/shot", "/analyze/shot/video"],
         "pose_model_present": model is not None,
         "pose_model_path": str(model) if model else None,
+        "s3": shot_s3_status(),
     }
 
 
@@ -351,13 +358,6 @@ def _shot_confidence(coco: np.ndarray) -> float | None:
     logits = sess.run(None, {"pose": nctv})[0]
     probs = _softmax(logits)[0]
     return float(probs[CLASS_IDS.index(SHOT_LABEL_ID)])
-
-
-_S3_NOT_READY = (
-    "s3_key is reserved for PR-B (S3 GetObject via SHOT_BUCKET). "
-    "This service does not fetch from AWS yet. "
-    "Send keypoints or pose_path, or POST /analyze/shot/video."
-)
 
 
 @app.post("/analyze", summary="Analyze pose JSON / 分析姿态 JSON", tags=["core"])
@@ -418,9 +418,10 @@ async def analyze_video(
 class ShotAnalyzeRequest(BaseModel):
     """Shooting-only body. The skill is always shot.instep.
 
-    Provide keypoints or pose_path. ``s3_key`` is accepted and rejected until
-    PR-B wires S3. There is no label_id field: this path cannot return a pass,
-    dribble, or first-touch result.
+    Provide keypoints, pose_path, or ``s3_key`` (an ``uploads/…`` object).
+    When ``s3_key`` is set it is fetched from ``SHOT_BUCKET`` and scored as a
+    video; keypoints in the same body are ignored. There is no label_id field:
+    this path cannot return a pass, dribble, or first-touch result.
     """
 
     keypoints: list[list[list[float]]] | None = None
@@ -432,7 +433,7 @@ class ShotAnalyzeRequest(BaseModel):
     fps: float = 30.0
     s3_key: str | None = Field(
         default=None,
-        description="TODO(PR-B): S3 object key. Not fetched yet.",
+        description="S3 object key under uploads/. Requires SHOT_BUCKET and AWS credentials.",
     )
     max_seconds: float = Field(default=10.0, gt=0, le=30)
 
@@ -459,6 +460,72 @@ def _score_shot_response(
     return result
 
 
+def _score_shot_file(
+    dest: Path,
+    *,
+    filename: str | None,
+    max_seconds: float,
+    source: dict[str, Any],
+) -> dict[str, Any]:
+    """OpenCV decode + DNN pose, then the shooting score. Shared by upload and S3."""
+    from pipeline.pose.opencv_dnn_pose import PoseModelMissingError, video_to_coco17_opencv
+
+    if max_seconds <= 0 or max_seconds > 30:
+        raise HTTPException(status_code=400, detail="max_seconds must be in (0, 30]")
+    try:
+        coco, fps, meta = video_to_coco17_opencv(
+            dest,
+            max_frames=120,
+            max_seconds=float(max_seconds),
+        )
+    except PoseModelMissingError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    wh = meta.get("frame_wh") or [0, 0]
+    frame_wh = (int(wh[0]), int(wh[1])) if wh and wh[0] and wh[1] else None
+    opencv_meta = {
+        "version": meta.get("opencv_version"),
+        "pose_backend": meta.get("pose_backend"),
+        "frames_used": int(meta.get("frames") or coco.shape[0]),
+        "compliant": meta.get("opencv_compliant"),
+        "dnn_engine": meta.get("dnn_engine"),
+        "pinned": "5.0.0.93",
+    }
+    source = dict(source)
+    source["fps"] = fps
+    return _score_shot_response(
+        coco,
+        fps=fps,
+        image_quality=meta.get("quality"),
+        frame_wh=frame_wh,
+        opencv_meta=opencv_meta,
+        source=source,
+    )
+
+
+def _analyze_shot_from_s3(s3_key: str, *, max_seconds: float) -> dict[str, Any]:
+    """Download uploads/<id>.<ext> from SHOT_BUCKET, then score it as a shot video."""
+    suffix = Path(s3_key.strip()).suffix.lower() or ".mp4"
+    tmp_dir = Path(tempfile.mkdtemp(prefix="aifc_shot_s3_"))
+    dest = tmp_dir / f"object{suffix}"
+    try:
+        try:
+            key = download_shot_object(s3_key, dest)
+        except ShotStorageError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+        return _score_shot_file(
+            dest,
+            filename=Path(key).name,
+            max_seconds=max_seconds,
+            source={"type": "s3", "s3_key": key, "bucket": shot_bucket()},
+        )
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
 @app.post(
     "/analyze/shot",
     summary="Score an instep shot / 射门评分（仅射门）",
@@ -467,12 +534,13 @@ def _score_shot_response(
 def analyze_shot(body: ShotAnalyzeRequest) -> dict[str, Any]:
     """Return 0–100 and one coaching sentence for shot.instep.
 
-    Keypoints work on the Render deploy image. Video pose needs OpenCV 5
-    from requirements-comp.txt, which that image does not install yet.
+    Keypoints work on the Render deploy image. ``s3_key`` downloads the object
+    with boto3 and then uses the OpenCV video path. That path needs
+    requirements-comp.txt, which the live deploy image does not install.
     """
-    if body.s3_key:
-        # TODO(PR-B): GetObject from SHOT_BUCKET, then video_to_coco17_opencv.
-        raise HTTPException(status_code=501, detail=_S3_NOT_READY)
+    s3_key = (body.s3_key or "").strip()
+    if s3_key:
+        return _analyze_shot_from_s3(s3_key, max_seconds=body.max_seconds)
     try:
         kps, topo = _load_keypoints_array(
             keypoints=body.keypoints,
@@ -501,48 +569,20 @@ async def analyze_shot_video(
     MediaPipe is not the primary backend. It runs only when the process has
     AIFC_ALLOW_MP_FALLBACK=1 and the ONNX pose file is missing.
     """
-    if max_seconds <= 0 or max_seconds > 30:
-        raise HTTPException(status_code=400, detail="max_seconds must be in (0, 30]")
     suffix = Path(file.filename or "clip.mp4").suffix.lower() or ".mp4"
     if suffix not in {".mp4", ".webm", ".mov", ".avi", ".mkv"}:
         raise HTTPException(status_code=400, detail=f"Unsupported video type: {suffix}")
-
-    from pipeline.pose.opencv_dnn_pose import PoseModelMissingError, video_to_coco17_opencv
 
     tmp_dir = Path(tempfile.mkdtemp(prefix="aifc_shot_"))
     dest = tmp_dir / f"upload{suffix}"
     try:
         with dest.open("wb") as out:
             shutil.copyfileobj(file.file, out)
-        try:
-            coco, fps, meta = video_to_coco17_opencv(
-                dest,
-                max_frames=120,
-                max_seconds=float(max_seconds),
-            )
-        except PoseModelMissingError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        except ImportError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        wh = meta.get("frame_wh") or [0, 0]
-        frame_wh = (int(wh[0]), int(wh[1])) if wh[0] and wh[1] else None
-        opencv_meta = {
-            "version": meta.get("opencv_version"),
-            "pose_backend": meta.get("pose_backend"),
-            "frames_used": int(meta.get("frames") or coco.shape[0]),
-            "compliant": meta.get("opencv_compliant"),
-            "dnn_engine": meta.get("dnn_engine"),
-            "pinned": "5.0.0.93",
-        }
-        return _score_shot_response(
-            coco,
-            fps=fps,
-            image_quality=meta.get("quality"),
-            frame_wh=frame_wh,
-            opencv_meta=opencv_meta,
-            source={"type": "video", "filename": file.filename, "fps": fps},
+        return _score_shot_file(
+            dest,
+            filename=file.filename,
+            max_seconds=float(max_seconds),
+            source={"type": "video", "filename": file.filename},
         )
     except HTTPException:
         raise

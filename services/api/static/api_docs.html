@@ -117,7 +117,7 @@
       <div class="row"><button type="button" class="btn" id="btnShot" data-i18n="tryShot">用射门样例跑一次</button></div>
       <pre id="shotOut" hidden></pre>
       <p class="status" id="shotStatus"></p>
-      <p class="tiny" data-i18n="shotNote">视频姿态要 OpenCV 5（requirements-comp.txt）。当前 Render 镜像未装 OpenCV，关键点接口仍可用。S3 上传是下一步。</p>
+      <p class="tiny" data-i18n="shotNote">关键点在当前 Render 镜像上可用。s3_key 会从 SHOT_BUCKET 下载 uploads/ 对象再走 OpenCV，需要竞赛镜像（Dockerfile.comp）。说明见 docs/deploy_aws.md。Bedrock 未接。</p>
     </section>
 
     <section class="card">
@@ -145,7 +145,7 @@
       shotDesc: "仅射门。返回 0–100 和一句中文纠错。不返回传球、盘带或停球。",
       shotBody: "Body JSON 示例：",
       tryShot: "用射门样例跑一次",
-      shotNote: "视频姿态要 OpenCV 5（requirements-comp.txt）。当前 Render 镜像未装 OpenCV，关键点接口仍可用。S3 上传是下一步。",
+      shotNote: "关键点在当前 Render 镜像上可用。s3_key 会从 SHOT_BUCKET 下载 uploads/ 对象再走 OpenCV，需要竞赛镜像（Dockerfile.comp）。说明见 docs/deploy_aws.md。Bedrock 未接。",
       fieldsTitle: "返回字段（人话）",
       fields: [
         "label_id / confidence — 识别出的技术动作与把握",
@@ -179,7 +179,7 @@
       shotDesc: "Shooting only. Returns 0–100 and one correction. It does not return pass, dribble, or first touch.",
       shotBody: "Example JSON body:",
       tryShot: "Run shot sample",
-      shotNote: "Video pose needs OpenCV 5 (requirements-comp.txt). The current Render image does not install it; the keypoint route still works. S3 upload is the next step.",
+      shotNote: "Keypoints work on the current Render image. s3_key downloads an uploads/ object from SHOT_BUCKET and then runs OpenCV, which needs the contest image (Dockerfile.comp). See docs/deploy_aws.md. Bedrock is not wired.",
       fieldsTitle: "Response fields (plain English)",
       fields: [
         "label_id / confidence — detected skill and confidence",

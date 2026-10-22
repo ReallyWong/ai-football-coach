@@ -101,9 +101,9 @@ See `docs/eval.md` and `docs/ruvview_exploration.md`.
 
 NATI 哪踢 / ScoutMind. This competition slice is **instep shooting only** (`shot.instep`): score 0–100 and one coaching sentence.
 
-`POST /analyze/shot` is the shooting endpoint. Video pose prefers OpenCV 5 DNN (MoveNet or YOLO-pose ONNX) from `requirements-comp.txt` (`opencv-python-headless==5.0.0.93`). The live Render image stays on `requirements-deploy.txt` (no torch, no OpenCV) until a second service exists.
+`POST /analyze/shot` is the shooting endpoint. Video pose prefers OpenCV 5 DNN (MoveNet or YOLO-pose ONNX) from `requirements-comp.txt` (`opencv-python-headless==5.0.0.93`). The live Render image stays on `requirements-deploy.txt` (no torch, no OpenCV, no boto3). A contest image is `Dockerfile.comp`. `s3_key` fetches `uploads/…` from `SHOT_BUCKET` and then uses that video path. Coach-ui **射门上传** presigns, PUTs to S3, and posts the key. Bedrock is not wired.
 
-Plan, agent policy, and the remaining AWS / report checklist: [docs/opencv26/README.md](docs/opencv26/README.md).
+Plan and env: [docs/opencv26/README.md](docs/opencv26/README.md), [docs/deploy_aws.md](docs/deploy_aws.md).
 
 ## License
 

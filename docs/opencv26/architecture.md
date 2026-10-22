@@ -2,7 +2,7 @@
 
 NATI 哪踢 / ScoutMind youth football. AI Football Coach is the technique-correction slice. The competition demo is **instep shooting only**.
 
-OpenCV 5 does the video work. AWS is the agent and the clip store. Render keeps the low-latency API it already serves. PR-A implements the Render shooting path and the decision policy in process. The AWS boxes below are the PR-B contract, not a claim that they are deployed.
+OpenCV 5 does the video work. S3 stores the clip. Render keeps the low-latency API it already serves. Presign and `s3_key` GetObject are wired. Bedrock and the agent Lambda are not. `decide_next_action` still runs in the API.
 
 ```mermaid
 flowchart TB
@@ -38,7 +38,7 @@ flowchart TB
   L2 -->|trace.json| S3
 ```
 
-Until PR-B, step 4 can also be keypoints or `POST /analyze/shot/video`, and step 5 is computed inside the API by `decide_next_action`. `s3_key` returns HTTP 501 so a client cannot mistake a local score for an S3 round-trip.
+Keypoints and `POST /analyze/shot/video` still work. Step 5 is `decide_next_action` inside the API. `s3_key` downloads `uploads/…` from `SHOT_BUCKET` and then runs the OpenCV path. On the live image that returns 503 (no boto3 / no OpenCV) instead of pretending to score. Bedrock does not rewrite the sentence. Env and the live presign URL: `docs/deploy_aws.md`.
 
 ## Who does what
 
@@ -47,8 +47,8 @@ Until PR-B, step 4 can also be keypoints or `POST /analyze/shot/video`, and step
 | OpenCV 5 | `VideoCapture`, Laplacian blur, brightness, DNN pose (MoveNet or YOLO-pose ONNX), skeleton overlay |
 | Geometry + ONNX probe | Force `shot.instep`. Plant foot and torso lean become 0–100. The probe only nudges the score |
 | Agent | `request_re_record`, `assign_drill`, or `accept_and_coach` from those measurements |
-| Bedrock (PR-B) | Rewrite the one sentence. It does not pick `next_action` |
-| S3 (PR-B) | Clip, overlay, trace for the judges |
+| Bedrock | Deferred. It would rewrite the one sentence and would not pick `next_action` |
+| S3 | Clip store. Presign is live. The API GetObject path reads `uploads/` only |
 | Render | Public API. Deploy image stays on `requirements-deploy.txt` until a second service exists |
 
 ## Response the UI should read

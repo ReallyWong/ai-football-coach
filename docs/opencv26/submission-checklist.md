@@ -6,7 +6,7 @@ Project name to submit: **ScoutMind Shot Coach / NATI 射门 Agent**.
 
 One sentence: a 10-second youth shot goes through OpenCV 5 pose and quality checks, an agent chooses re-record or a drill, and the player gets one sentence they can use.
 
-Built with, once PR-B lands: OpenCV 5, AWS S3, API Gateway, Lambda, Bedrock, ONNX Runtime, FastAPI, Render.
+Built with so far: OpenCV 5, AWS S3, API Gateway, Lambda (presign only), ONNX Runtime, FastAPI, Render. Bedrock is still deferred.
 
 ## Required
 
@@ -34,8 +34,9 @@ Do not block the shooting path on COOL.
 
 ## Still open after PR-A
 
-- [ ] PR-B AWS: S3, presign Lambda, agent Lambda, Bedrock sentence, traces
+- [x] AWS minimal path: S3, presign Lambda, `POST /analyze/shot` `s3_key` (`docs/deploy_aws.md`)
+- [ ] Agent Lambda, Bedrock sentence, traces
 - [ ] Real MoveNet or YOLO-pose ONNX checked in or published as a release asset
-- [ ] PR-C coach-ui shooting-only screen
+- [x] coach-ui shooting upload (presign → S3 → score). Contest service still needs `Dockerfile.comp`
 - [ ] PR-D report PDF and the 5-minute video
 - [ ] Second Render service before `requirements-comp.txt` is allowed onto a deploy image

@@ -7,3 +7,5 @@ pydantic
 python-multipart
 # torch is intentionally omitted. Train/export use requirements-m2.txt.
 # The API loads the ONNX probe and must start without torch.
+# OpenCV and boto3 stay in requirements-comp.txt (Dockerfile.comp).
+# Do not add them here: this file is the live Render image.

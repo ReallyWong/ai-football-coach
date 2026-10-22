@@ -19,7 +19,7 @@ _real_import = builtins.__import__
 
 def _guard(name, globals=None, locals=None, fromlist=(), level=0):
     root = name.split(".", 1)[0]
-    if root in {"torch", "cv2"}:
+    if root in {"torch", "cv2", "boto3", "botocore"}:
         raise ModuleNotFoundError(f"No module named '{root}'")
     return _real_import(name, globals, locals, fromlist, level)
 
@@ -54,6 +54,28 @@ except ImportError as exc:
         raise SystemExit(f"expected torch ImportError, got: {exc}") from exc
 else:
     raise SystemExit("SkeletonProbe() should fail when torch is missing")
+
+import os
+os.environ.pop("SHOT_BUCKET", None)
+from fastapi.testclient import TestClient
+
+client = TestClient(app)
+health = client.get("/health")
+if health.status_code != 200:
+    raise SystemExit(health.text)
+shot = health.json().get("shot") or {}
+s3_status = shot.get("s3") or {}
+if s3_status.get("boto3_present") is not False:
+    raise SystemExit(f"health imported boto3 under the deploy guard: {s3_status}")
+s3 = client.post("/analyze/shot", json={"s3_key": "uploads/demo.mp4"})
+if s3.status_code != 503 or "SHOT_BUCKET" not in s3.text:
+    raise SystemExit(f"s3_key without SHOT_BUCKET should be 503, got {s3.status_code} {s3.text}")
+passed = client.post(
+    "/analyze",
+    json={"keypoints": clip.tolist(), "topology": "coco17", "label_id": "pass.inside"},
+)
+if passed.status_code not in {200, 503}:
+    raise SystemExit(f"/analyze broke without torch/cv2/boto3: {passed.status_code} {passed.text}")
 
 print("ok")
 """

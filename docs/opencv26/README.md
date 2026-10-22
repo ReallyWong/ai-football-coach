@@ -24,7 +24,8 @@ Passing, dribbling, and first touch stay on `POST /analyze`. They are not part o
 | Score + one sentence + `next_action` | `pipeline/shot/scoring.py` | Done, in process |
 | `POST /analyze/shot` | keypoints or `pose_path` | Works on the current Render image |
 | `POST /analyze/shot/video` | multipart file | Needs the comp env (OpenCV 5) |
-| `s3_key` | request field | **501** until PR-B |
+| `s3_key` | `uploads/…` object in `SHOT_BUCKET` | GetObject, then the video path. Needs the comp env (boto3 + OpenCV). **503** on the live image |
+| coach-ui **射门上传** | presign → S3 PUT → `/analyze/shot` | Wired to the live presign API. See [docs/deploy_aws.md](../deploy_aws.md) |
 
 The deterministic policy is the agent brain for now:
 
@@ -58,24 +59,25 @@ curl -s http://127.0.0.1:8000/analyze/shot \
   -d '{"pose_path":"fixtures/demo_shot_instep_pose.json"}'
 ```
 
-User-facing fields are `score` and `coaching_zh`. `triggered_rules` is an audit list for the geometric faults; the product shows one sentence. `agent.trace_s3_key` is `null` until PR-B.
+User-facing fields are `score` and `coaching_zh`. `triggered_rules` is an audit list for the geometric faults; the product shows one sentence. `agent.trace_s3_key` stays `null` until a trace is stored. Bedrock is not in this path.
+
+S3 clip fetch and the coach-ui upload flow are in [docs/deploy_aws.md](../deploy_aws.md). The live Render image still does not install OpenCV or boto3.
 
 ## Later PRs
 
-### PR-B — AWS (required for the competition)
+### PR-B — AWS
 
-- [ ] S3 bucket for clips, overlays, and traces
-- [ ] API Gateway + Lambda: presign upload
-- [ ] Lambda: receive the observation, call `decide_next_action`, ask Bedrock for **one** sentence, write `trace.json`
-- [ ] `POST /analyze/shot` accepts `s3_key` and reads the object (`SHOT_BUCKET`, `AWS_REGION`, `AGENT_API_URL`)
-- [ ] `docs/deploy_aws.md` with least-privilege IAM
-- [ ] Do not replace the Render service with this stack; add AWS beside it
+- [x] S3 bucket + API Gateway presign (live; no Bedrock)
+- [x] `POST /analyze/shot` reads `s3_key` via `SHOT_BUCKET`, `AWS_REGION`, and the standard AWS credential env vars
+- [x] `docs/deploy_aws.md` with least-privilege IAM and the contest Render env
+- [x] Live Render service unchanged (`Dockerfile` / `requirements-deploy.txt`). Contest image is `Dockerfile.comp`
+- [ ] Agent Lambda, Bedrock sentence rewrite, `trace.json` (`AGENT_API_URL` still unused)
 
 ### PR-C — coach-ui shooting mode
 
-- [ ] One flow: upload or record a shot, show score + one sentence + `next_action`
-- [ ] `request_re_record` hides the score
-- [ ] `assign_drill` shows `drill_id` (`drill.lean_wall`, `drill.plant_target`)
+- [x] One flow: choose or record a shot, presign, S3 PUT, show score + one sentence + `next_action`
+- [x] `request_re_record` hides the score
+- [x] `assign_drill` shows `drill_id` (`drill.lean_wall`, `drill.plant_target`)
 
 ### PR-D — report and submit
 

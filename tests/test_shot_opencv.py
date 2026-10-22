@@ -188,9 +188,20 @@ def test_requirements_comp_pins_opencv5_and_deploy_does_not():
     deploy = "\n".join(deploy_lines)
     assert "opencv" not in deploy
     assert "torch" not in deploy
-    dockerfile = (REPO_ROOT / "Dockerfile").read_text(encoding="utf-8")
+    def _install_lines(text: str) -> str:
+        kept = []
+        for line in text.splitlines():
+            code = line.split("#", 1)[0]
+            if "requirements-" in code:
+                kept.append(code)
+        return "\n".join(kept)
+
+    dockerfile = _install_lines((REPO_ROOT / "Dockerfile").read_text(encoding="utf-8"))
     assert "requirements-deploy.txt" in dockerfile
     assert "requirements-comp.txt" not in dockerfile
+    contest = _install_lines((REPO_ROOT / "Dockerfile.comp").read_text(encoding="utf-8"))
+    assert "requirements-comp.txt" in contest
+    assert "requirements-deploy.txt" not in contest
     render = (REPO_ROOT / "render.yaml").read_text(encoding="utf-8")
     assert "dockerfilePath: ./Dockerfile" in render
     assert "branch: main" in render
@@ -245,8 +256,8 @@ def test_analyze_shot_api_and_existing_paths(tmp_path: Path):
     missing = client.post("/analyze/shot", json={})
     assert missing.status_code == 400
     s3 = client.post("/analyze/shot", json={"s3_key": "uploads/demo.mp4"})
-    assert s3.status_code == 501
-    assert "PR-B" in s3.json()["detail"]
+    assert s3.status_code == 503
+    assert "SHOT_BUCKET" in s3.json()["detail"]
 
     assert FIXTURE.is_file()
     from_file = client.post("/analyze/shot", json={"pose_path": "fixtures/demo_shot_instep_pose.json"})

@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Contest image only: OpenCV 5 and boto3 for POST /analyze/shot s3_key.
+# The live ai-football-coach service must keep using Dockerfile, which
+# installs requirements-deploy.txt. See docs/deploy_aws.md.
+COPY requirements-comp.txt .
+RUN pip install --no-cache-dir -r requirements-comp.txt
+
+COPY . .
+
+ENV PORT=8000
+EXPOSE 8000
+
+CMD uvicorn services.api.app:app --host 0.0.0.0 --port ${PORT:-8000}
