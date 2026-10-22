@@ -2,7 +2,9 @@
 
 OpenCV 5 DNN weights for the shooting video path (`POST /analyze/shot/video`).
 
-These files are **not vendored**. MoveNet and YOLO-pose checkpoints are large and carry their own licenses. The scoring API still runs from keypoints without them. The live Render image does not load this directory.
+These files are **not vendored in git**. MoveNet and YOLO-pose checkpoints carry their own licenses. The scoring API still runs from keypoints without them. The live Render image (`Dockerfile`) does not download this directory.
+
+The contest image (`Dockerfile.comp`) downloads MoveNet SinglePose Lightning at build time to `movenet_lightning.onnx`. Source: [Xenova/movenet-singlepose-lightning](https://huggingface.co/Xenova/movenet-singlepose-lightning) `onnx/model.onnx`, commit `ed0f314bb7356fd1dbf1e4f52c2d40791bf6534f`, **Apache-2.0** (Google MoveNet weights, Xenova ONNX export). The published graph input is **int32** NHWC. `movenet_lightning.json` sets `input_dtype` so OpenCV is given int32 pixels 0–255. MediaPipe stays off.
 
 | File | Family | Input |
 |------|--------|--------|
@@ -21,9 +23,12 @@ A sibling JSON file overrides the filename guess:
   "layout": "nhwc",
   "scale": 1.0,
   "coord_order": "yx",
-  "letterbox": false
+  "letterbox": false,
+  "input_dtype": "int32"
 }
 ```
+
+`input_dtype` defaults to `float32`. The Lightning file from the contest build uses `int32`.
 
 Export notes:
 

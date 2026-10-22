@@ -10,6 +10,12 @@ RUN pip install --no-cache-dir -r requirements-comp.txt
 
 COPY . .
 
+# Apache-2.0 MoveNet Lightning. Not committed; fetched while the image builds
+# so shot.pose_model_present is true. Needs network. See docs/deploy_aws.md.
+# Does not set AIFC_ALLOW_MP_FALLBACK.
+RUN python scripts/fetch_movenet_lightning.py \
+    && test -s models/pose/movenet_lightning.onnx
+
 ENV PORT=8000
 EXPOSE 8000
 

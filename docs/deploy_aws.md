@@ -43,6 +43,7 @@ Use a **second** service (or a separate env you are willing to put the comp imag
 
 - Docker file: `Dockerfile.comp` (installs `requirements-comp.txt`)
 - Do not point `render.yaml` at `Dockerfile.comp`. That blueprint is the live fundamentals service on `main`.
+- At image build, `Dockerfile.comp` runs `scripts/fetch_movenet_lightning.py` and writes `models/pose/movenet_lightning.onnx`. The weight is not in git. Source: `https://huggingface.co/Xenova/movenet-singlepose-lightning` file `onnx/model.onnx`, commit `ed0f314bb7356fd1dbf1e4f52c2d40791bf6534f`, Apache-2.0. Input is int32 192×192 NHWC, pixels 0–255; output squeezes to `(17, 3)` COCO `(y, x, score)`. The build does not set `AIFC_ALLOW_MP_FALLBACK`. After deploy, `GET /health` shows `shot.pose_model_present: true`.
 
 Environment:
 

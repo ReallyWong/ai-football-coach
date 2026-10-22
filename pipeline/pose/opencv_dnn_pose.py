@@ -12,7 +12,8 @@ MediaPipe is not imported unless ``AIFC_ALLOW_MP_FALLBACK=1`` and the ONNX
 file is missing. The Render deploy image does not install OpenCV; callers
 get a clear ImportError instead of a silent fallback.
 
-Weights are not vendored. See ``models/pose/README.md``.
+Weights are not committed. ``Dockerfile.comp`` downloads MoveNet Lightning.
+See ``models/pose/README.md``.
 """
 from __future__ import annotations
 
@@ -72,6 +73,7 @@ class PoseModelSpec:
     scale: float
     coord_order: str  # yx (MoveNet) | xy (YOLO)
     letterbox: bool
+    input_dtype: str = "float32"  # float32 | int32 (MoveNet Lightning ONNX)
 
 
 def opencv_runtime_info() -> dict[str, Any]:
@@ -119,6 +121,7 @@ def spec_for_path(path: Path) -> PoseModelSpec:
             scale=float(data.get("scale", 1.0 / 255.0 if family == "yolo_pose" else 1.0)),
             coord_order=str(data.get("coord_order", "xy" if family == "yolo_pose" else "yx")),
             letterbox=bool(data.get("letterbox", family == "yolo_pose")),
+            input_dtype=str(data.get("input_dtype", "float32")),
         )
     name = path.name.lower()
     if "yolo" in name:
@@ -318,9 +321,17 @@ def prepare_input(frame_bgr: np.ndarray, spec: PoseModelSpec) -> tuple[np.ndarra
     else:
         canvas = cv2.resize(frame_bgr, (size, size))
         geom = {"mode": "stretch"}
-    rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB).astype(np.float32)
-    if spec.scale != 1.0:
-        rgb *= np.float32(spec.scale)
+    rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
+    if spec.input_dtype == "int32":
+        # Xenova/TF Hub MoveNet Lightning declares an int32 image. OpenCV
+        # rejects a float blob for that graph. Pixels stay 0–255.
+        rgb = np.clip(rgb, 0, 255).astype(np.int32)
+    elif spec.input_dtype == "float32":
+        rgb = rgb.astype(np.float32)
+        if spec.scale != 1.0:
+            rgb *= np.float32(spec.scale)
+    else:
+        raise ValueError(f"input_dtype must be 'float32' or 'int32', got {spec.input_dtype!r}")
     if spec.layout == "nhwc":
         blob = rgb.reshape(1, size, size, 3)
     elif spec.layout == "nchw":

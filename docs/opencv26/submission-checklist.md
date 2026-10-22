@@ -36,7 +36,7 @@ Do not block the shooting path on COOL.
 
 - [x] AWS minimal path: S3, presign Lambda, `POST /analyze/shot` `s3_key` (`docs/deploy_aws.md`)
 - [ ] Agent Lambda, Bedrock sentence, traces
-- [ ] Real MoveNet or YOLO-pose ONNX checked in or published as a release asset
+- [x] Contest image downloads MoveNet Lightning at build (`scripts/fetch_movenet_lightning.py`). The weight stays out of git
 - [x] coach-ui shooting upload (presign → S3 → score). Contest service still needs `Dockerfile.comp`
 - [ ] PR-D report PDF and the 5-minute video
 - [ ] Second Render service before `requirements-comp.txt` is allowed onto a deploy image

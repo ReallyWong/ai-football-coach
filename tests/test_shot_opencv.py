@@ -21,6 +21,7 @@ from pipeline.pose.opencv_dnn_pose import (  # noqa: E402
     decode_movenet_output,
     decode_yolo_pose_output,
     preferred_engine_name,
+    spec_for_path,
 )
 from pipeline.pose.quality_gates import merge_quality, pose_quality  # noqa: E402
 from pipeline.rules_engine import load_rules  # noqa: E402
@@ -207,6 +208,31 @@ def test_requirements_comp_pins_opencv5_and_deploy_does_not():
     assert "branch: main" in render
 
 
+def test_contest_image_downloads_movenet_and_live_image_does_not():
+    script = (REPO_ROOT / "scripts" / "fetch_movenet_lightning.py").read_text(encoding="utf-8")
+    assert "Xenova/movenet-singlepose-lightning" in script
+    assert "ed0f314bb7356fd1dbf1e4f52c2d40791bf6534f" in script
+    assert "Apache-2.0" in script
+    contest = (REPO_ROOT / "Dockerfile.comp").read_text(encoding="utf-8")
+    assert "python scripts/fetch_movenet_lightning.py" in contest
+    assert "AIFC_ALLOW_MP_FALLBACK=1" not in contest
+    assert "ENV AIFC_ALLOW_MP_FALLBACK" not in contest
+    live = (REPO_ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert "fetch_movenet_lightning" not in live
+    assert "models/pose/*.onnx" in (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
+    spec = spec_for_path(REPO_ROOT / "models" / "pose" / "movenet_lightning.onnx")
+    assert spec.family == "movenet"
+    assert spec.input_size == 192
+    assert spec.layout == "nhwc"
+    assert spec.scale == 1.0
+    assert spec.coord_order == "yx"
+    assert spec.letterbox is False
+    assert spec.input_dtype == "int32"
+    docs = (REPO_ROOT / "docs" / "deploy_aws.md").read_text(encoding="utf-8")
+    assert "fetch_movenet_lightning.py" in docs
+    assert "Apache-2.0" in docs
+
+
 def test_analyze_shot_api_and_existing_paths(tmp_path: Path):
     from fastapi.testclient import TestClient
     from services.api.app import app
@@ -271,6 +297,20 @@ def _opencv_installed() -> bool:
     except ImportError:
         return False
     return True
+
+
+@pytest.mark.skipif(not _opencv_installed(), reason="opencv-python-headless is not installed")
+def test_movenet_lightning_spec_feeds_int32_nhwc():
+    from pipeline.pose.opencv_dnn_pose import prepare_input
+
+    spec = spec_for_path(REPO_ROOT / "models" / "pose" / "movenet_lightning.onnx")
+    frame = np.zeros((240, 320, 3), dtype=np.uint8)
+    frame[30:200, 100:180] = (20, 40, 200)
+    blob, geom = prepare_input(frame, spec)
+    assert blob.shape == (1, 192, 192, 3)
+    assert blob.dtype == np.int32
+    assert 0 <= int(blob.min()) and int(blob.max()) <= 255
+    assert geom["mode"] == "stretch"
 
 
 @pytest.mark.skipif(not _opencv_installed(), reason="opencv-python-headless is not installed")

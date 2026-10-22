@@ -19,7 +19,7 @@ Passing, dribbling, and first touch stay on `POST /analyze`. They are not part o
 |-------|--------|--------|
 | OpenCV **5.0.0.93** pin | `requirements-comp.txt` | Local / competition env only |
 | Decode, blur, brightness, person size, joint coverage | `pipeline/pose/quality_gates.py` | Done |
-| MoveNet / YOLO-pose via `cv2.dnn` (`ENGINE_NEW`) | `pipeline/pose/opencv_dnn_pose.py` | Done; weights not vendored |
+| MoveNet / YOLO-pose via `cv2.dnn` (`ENGINE_NEW`) | `pipeline/pose/opencv_dnn_pose.py` | Done. Contest image downloads Lightning at build; the file is not in git |
 | MediaPipe | `video_to_mp33.py` | Fallback only if `AIFC_ALLOW_MP_FALLBACK=1` |
 | Score + one sentence + `next_action` | `pipeline/shot/scoring.py` | Done, in process |
 | `POST /analyze/shot` | keypoints or `pose_path` | Works on the current Render image |

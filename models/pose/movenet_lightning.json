@@ -1,0 +1,12 @@
+{
+  "family": "movenet",
+  "input_size": 192,
+  "layout": "nhwc",
+  "scale": 1.0,
+  "coord_order": "yx",
+  "letterbox": false,
+  "input_dtype": "int32",
+  "source": "https://huggingface.co/Xenova/movenet-singlepose-lightning/resolve/ed0f314bb7356fd1dbf1e4f52c2d40791bf6534f/onnx/model.onnx",
+  "license": "Apache-2.0",
+  "note": "Google MoveNet SinglePose Lightning via the Xenova ONNX export. Input is int32 NHWC 192, pixels 0-255. Output squeezes to (17, 3) as (y, x, score) in COCO order."
+}
