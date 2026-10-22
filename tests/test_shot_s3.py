@@ -105,6 +105,7 @@ def test_download_maps_missing_object_and_writes_bytes(monkeypatch, tmp_path: Pa
 def test_analyze_shot_s3_scores_downloaded_clip(monkeypatch):
     monkeypatch.setenv("SHOT_BUCKET", BUCKET)
     monkeypatch.setenv("AWS_REGION", "ap-southeast-1")
+    # Public AWS docs examples, not a real account. They must not echo in the response.
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
     seen: dict[str, object] = {}
