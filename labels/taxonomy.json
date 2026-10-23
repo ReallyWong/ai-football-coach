@@ -41,7 +41,7 @@
       "joints": ["hip", "knee", "ankle", "torso"],
       "joint_indices_coco17": [5, 6, 11, 12, 13, 14, 15, 16],
       "score_dimensions": ["form", "timing", "balance"],
-      "metrics": ["torso_lean_deg"],
+      "metrics": ["torso_lean_deg", "plant_foot_angle_deg"],
       "clip_hint": {
         "duration_s": [1.5, 3.5],
         "view": ["side", "diagonal"]

@@ -1,0 +1,9 @@
+{
+  "family": "movenet",
+  "input_size": 8,
+  "layout": "nhwc",
+  "scale": 1.0,
+  "coord_order": "yx",
+  "letterbox": false,
+  "note": "Constant graph for cv2.dnn.readNetFromONNX. Not a pose estimator."
+}

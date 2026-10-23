@@ -8,6 +8,8 @@ dist/
 *.egg-info/
 .pytest_cache/
 *.onnx.data
+# Contest image downloads this at build time (scripts/fetch_movenet_lightning.py).
+models/pose/*.onnx
 
 # M3 synthetic dataset binaries (manifest + samples stay tracked)
 datasets/**/clips/

@@ -1,0 +1,19 @@
+# Competition / local OpenCV 5 slice for OpenCV AI Competition 2026.
+# Do NOT replace requirements-deploy.txt with this file.
+# The live Render service (Dockerfile) installs requirements-deploy.txt only.
+# That image stays torch-free and does not install OpenCV until a second
+# Render service exists. Video routes lazy-import cv2 and return 503 there.
+#
+# boto3 is optional at process start. POST /analyze/shot imports it only when
+# the body includes s3_key. The live image does not install this file.
+
+numpy>=1.26,<3
+onnxruntime>=1.16
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.0
+python-multipart>=0.0.9
+opencv-python-headless==5.0.0.93
+boto3>=1.34
+httpx>=0.27
+pytest>=7.0

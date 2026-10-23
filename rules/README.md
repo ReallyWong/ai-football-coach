@@ -2,7 +2,7 @@
 
 Maps pose geometry **and** ST-GCN++ signals → coach feedback.
 
-**Canonical file:** [`rules.json`](rules.json) **v0.2.0**.  
+**Canonical file:** [`rules.json`](rules.json) **v0.3.0**.  
 `rules.draft.json` is superseded.
 
 ## Dual-track (`from`)
@@ -28,4 +28,7 @@ Maps pose geometry **and** ST-GCN++ signals → coach feedback.
 
 - `pass.inside.plant_foot` — geometric plant-foot angle
 - `shot.instep.lean` — geometric torso lean
+- `shot.instep.plant_foot` — geometric plant foot for an instep shot (v0.3)
 - `any.low_confidence` — model confidence tip (dual-track concrete example)
+
+The shooting endpoint (`POST /analyze/shot`) shows **one** of the shot sentences. If both shot rules fire, the larger point penalty wins. `any.low_confidence` stays on `/analyze` and is not a second shot sentence.
