@@ -2,6 +2,8 @@
 
 OpenCV 5 decides whether the clip can be trusted and which geometric fault matters. The policy then picks **one** next action. The sentence follows that action. A chat recap of a fixed score is not this loop.
 
+Perceive → decide → act figure: [agent-workflow.png](agent-workflow.png). Bedrock in that figure is deferred.
+
 ```mermaid
 sequenceDiagram
   participant U as Player phone

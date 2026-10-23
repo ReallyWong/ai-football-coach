@@ -4,6 +4,8 @@ NATI 哪踢 / ScoutMind youth football. AI Football Coach is the technique-corre
 
 OpenCV 5 does the video work. S3 stores the clip. Render keeps the low-latency API it already serves. Presign and `s3_key` GetObject are wired. Bedrock and the agent Lambda are not. `decide_next_action` still runs in the API.
 
+As-deployed figure: [architecture.png](architecture.png). The report is [opencv26_technical_report.pdf](opencv26_technical_report.pdf).
+
 ```mermaid
 flowchart TB
   subgraph Client

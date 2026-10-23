@@ -10,17 +10,17 @@ Built with so far: OpenCV 5, AWS S3, API Gateway, Lambda (presign only), ONNX Ru
 
 ## Required
 
-- [ ] Technical report (problem, users, architecture, OpenCV 5, AWS, evaluation, limits, responsible use)
-- [ ] Repo the judges can open (this branch, later tag `opencv26-submit`)
+- [x] Technical report: [opencv26_technical_report.pdf](opencv26_technical_report.pdf) and [opencv26_report.md](opencv26_report.md)
+- [ ] Repo the judges can open (this branch, later tag `opencv26-submit` — tag not created)
 - [ ] Pinned dependencies plus build / deploy / test steps (`requirements-comp.txt`, this folder, `models/pose/README.md`)
-- [ ] Architecture diagram that labels OpenCV 5 and AWS (`architecture.md`)
+- [x] Architecture diagram that labels OpenCV 5 and AWS: [architecture.png](architecture.png) (notes in [architecture.md](architecture.md))
 - [ ] Working endpoint or an agreed live screen-share
-- [ ] Video, 5 minutes or less (team, the app working, architecture, main result)
+- [ ] Video, 5 minutes or less (team, the app working, architecture, main result) — still outstanding
 - [ ] Evaluation evidence, including failures
 
 ## Agentic Vision
 
-- [ ] Workflow diagram (perceive → decide → act) — draft in `agent-workflow.md`
+- [x] Workflow diagram (perceive → decide → act): [agent-workflow.png](agent-workflow.png) (notes in [agent-workflow.md](agent-workflow.md))
 - [ ] Trace or demo where an OpenCV 5 measurement changes the next action
 - [ ] Success, failure, observability, and a human check (coach still reviews the sentence)
 
@@ -38,5 +38,6 @@ Do not block the shooting path on COOL.
 - [ ] Agent Lambda, Bedrock sentence, traces
 - [x] Contest image downloads MoveNet Lightning at build (`scripts/fetch_movenet_lightning.py`). The weight stays out of git
 - [x] coach-ui shooting upload (presign → S3 → score). Contest service still needs `Dockerfile.comp`
-- [ ] PR-D report PDF and the 5-minute video
+- [x] PR-D report PDF and diagrams in this folder (`opencv26_technical_report.pdf`, `architecture.png`, `agent-workflow.png`)
+- [ ] ≤5 min video (still outstanding) and tag `opencv26-submit`
 - [ ] Second Render service before `requirements-comp.txt` is allowed onto a deploy image

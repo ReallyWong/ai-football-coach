@@ -1,6 +1,6 @@
 # Technical report outline
 
-Target file: `docs/opencv26_report.md`, then PDF. About 6–10 pages. This outline is the PR-D skeleton. It is not the report.
+The report is [opencv26_report.md](opencv26_report.md) and [opencv26_technical_report.pdf](opencv26_technical_report.pdf). This outline is the skeleton that file was written from. It is not a second report.
 
 1. **Title / team** — Ruoli Wang (ReallyWong). NATI 哪踢 / ScoutMind. Track: Agentic Vision.
 2. **Problem and users** — Youth shooting feedback is slow and expensive. Parents and youth coaches. This slice is shooting only.

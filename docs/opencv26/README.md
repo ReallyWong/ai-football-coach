@@ -63,6 +63,17 @@ User-facing fields are `score` and `coaching_zh`. `triggered_rules` is an audit 
 
 S3 clip fetch and the coach-ui upload flow are in [docs/deploy_aws.md](../deploy_aws.md). The live Render image still does not install OpenCV or boto3.
 
+## Submission package
+
+| Piece | Path |
+|-------|------|
+| Technical report (PDF) | [opencv26_technical_report.pdf](opencv26_technical_report.pdf) |
+| Report source | [opencv26_report.md](opencv26_report.md) |
+| As-deployed diagram | [architecture.png](architecture.png) |
+| Perceive → decide → act | [agent-workflow.png](agent-workflow.png) |
+
+Bedrock and the agent Lambda stay deferred in that report. The ≤5 minute video and the `opencv26-submit` tag are still outstanding.
+
 ## Later PRs
 
 ### PR-B — AWS
@@ -81,9 +92,10 @@ S3 clip fetch and the coach-ui upload flow are in [docs/deploy_aws.md](../deploy
 
 ### PR-D — report and submit
 
-- [ ] `docs/opencv26_report.md` from `report-outline.md`, then PDF
-- [ ] Architecture diagram exported from `architecture.md` (OpenCV 5 and AWS both visible)
-- [ ] ≤5 min video, evaluation traces, tag `opencv26-submit`
-- [ ] Checklist in `submission-checklist.md`
+- [x] [opencv26_report.md](opencv26_report.md) and [opencv26_technical_report.pdf](opencv26_technical_report.pdf)
+- [x] [architecture.png](architecture.png) and [agent-workflow.png](agent-workflow.png)
+- [ ] ≤5 min video
+- [ ] Tag `opencv26-submit` (not created)
+- [x] Checklist in [submission-checklist.md](submission-checklist.md)
 
 COOL / Graviton is optional and does not block the submission.
