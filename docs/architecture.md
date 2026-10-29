@@ -26,3 +26,7 @@ flowchart LR
 - Dual-track rules: `from: geometric` (angles from COCO-17) vs `from: model` (ST-GCN++ confidence / scores). They are not interchangeable — see `rules/README.md`.
 
 Owned IP in this repo: labels, rules, Coach UI, pose/rules contracts, in-repo adapters. Forks stay external; pin versions in `integrations/`.
+
+## Competition slice
+
+The OpenCV AI Competition 2026 path is shooting-only and is documented separately so this v1 diagram stays the MediaPipe / Render coach: [opencv26/architecture.md](opencv26/architecture.md). That design adds OpenCV 5 DNN pose and AWS. AWS itself is a follow-up; it is not deployed from this file.

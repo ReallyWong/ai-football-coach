@@ -38,7 +38,7 @@
     }
     .lead { color: var(--muted); margin: 0; max-width: 40rem; }
     .mode-toggle {
-      display: inline-flex; background: #1e293b; border-radius: 999px; padding: 0.15rem;
+      display: inline-flex; flex-wrap: wrap; background: #1e293b; border-radius: 999px; padding: 0.15rem;
       border: 1px solid var(--line); margin-top: 0.9rem; gap: 0.1rem;
     }
     .mode-toggle button {
@@ -135,8 +135,13 @@
     .tease-head, .sig-head { display: flex; justify-content: space-between; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
     .tiny { font-size: 0.84rem; color: var(--muted); margin: 0.2rem 0 0.15rem; }
     #panelSig { display: none; margin-top: 1rem; }
+    #panelShot { display: none; margin-top: 1rem; }
     body.mode-sig #panelFund { display: none; }
     body.mode-sig #panelSig { display: block; }
+    body.mode-shot #panelFund { display: none; }
+    body.mode-shot #panelShot { display: block; }
+    .shot-score { font-size: 2rem; font-weight: 750; margin: 0.15rem 0; letter-spacing: -0.03em; }
+    .shot-key { color: var(--muted); font-size: 0.8rem; word-break: break-all; margin: 0.35rem 0 0; }
     .sig-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.7rem; margin-top: 0.75rem; }
     .sig-card {
       text-align: left; background: #0f172a; color: var(--text);
@@ -177,6 +182,7 @@
       <p class="lead" data-i18n="lead"></p>
       <div class="mode-toggle" role="group" aria-label="Mode">
         <button type="button" id="modeFund" class="on" data-i18n="modeFund">基础技术</button>
+        <button type="button" id="modeShot" data-i18n="modeShot">射门上传</button>
         <button type="button" id="modeSig" data-i18n="modeSig">球星招牌动作</button>
       </div>
       <div class="hero-actions">
@@ -294,6 +300,32 @@
       </div>
     </section>
 
+    <section id="panelShot" class="card">
+      <h2 data-i18n="shotTitle">射门上传</h2>
+      <p class="lead" data-i18n="shotLead"></p>
+      <div class="select-row">
+        <label class="tiny"><span data-i18n="shotFileLabel">选择射门视频</span><br />
+          <input type="file" id="shotFile" accept="video/mp4,video/webm,video/quicktime,video/*" />
+        </label>
+        <label class="tiny"><span data-i18n="shotCameraLabel">拍摄射门</span><br />
+          <input type="file" id="shotCamera" accept="video/*" capture="environment" />
+        </label>
+        <button type="button" class="primary" id="btnShotUpload" disabled data-i18n="btnShotUpload">上传并分析射门</button>
+      </div>
+      <p class="hint callout" data-i18n="shotHint"></p>
+      <div id="shotResult" hidden>
+        <div class="tip" id="shotTip">
+          <p class="main" id="shotSentence"></p>
+          <p class="sub" id="shotSentenceSub"></p>
+        </div>
+        <p class="shot-score" id="shotScore"></p>
+        <p class="meta" id="shotAction"></p>
+        <p class="meta" id="shotDrill" hidden></p>
+        <p class="shot-key" id="shotKey"></p>
+      </div>
+      <p class="status" id="shotStatus" aria-live="polite"></p>
+    </section>
+
     <details class="advanced">
       <summary data-i18n="advanced">开发者选项</summary>
       <p data-i18n="advancedNote"></p>
@@ -316,6 +348,7 @@
       hook: "这一脚哪里不对？",
       lead: "青少年要的不是再看一遍回放，而是下一次触球怎么改。演示模式不需要摄像头，也不需要 MediaPipe。",
       modeFund: "基础技术",
+      modeShot: "射门上传",
       modeSig: "球星招牌动作",
       btnDemo: "演示模式",
       btnJump: "跳到问题帧",
@@ -361,6 +394,33 @@
       statusNeedFile: "请先选择视频文件。",
       statusNoApi: "这个页面没有视频分析服务。请用「演示模式」。",
       statusUseDemo: "请改用「演示模式」。",
+      shotTitle: "射门上传",
+      shotLead: "只分析正脚背射门。选一段侧面视频，先传到 S3，再让竞赛服务按 s3_key 打分。",
+      shotFileLabel: "选择射门视频",
+      shotCameraLabel: "拍摄射门",
+      btnShotUpload: "上传并分析射门",
+      shotHint: "默认上传地址是公开的 presign API。分析发到本站 /analyze/shot。竞赛服务需要 SHOT_BUCKET、AWS 密钥，以及 requirements-comp.txt（OpenCV 与 boto3）。换地址用 ?presign= 和 ?api= 。Bedrock 还没接上。",
+      shotPresign: "正在申请上传地址…",
+      shotPutting: "正在把视频传到 S3…",
+      shotAnalyzing: "正在分析射门…",
+      shotDone: "射门分析完成。",
+      shotNeedFile: "请先选择或拍一段射门视频。",
+      shotNeedApi: "这个页面没有射门分析服务。打开时加上 ?api=https://你的竞赛服务",
+      shotBadPresign: "上传地址申请失败：",
+      shotPutFail: "传到 S3 失败：",
+      shotScoreLabel: "分数",
+      shotNext: "下一步",
+      shotDrillLabel: "练习",
+      shotActions: {
+        request_re_record: "请重录",
+        assign_drill: "做这个练习",
+        accept_and_coach: "这一脚可以",
+      },
+      drills: {
+        "drill.lean_wall": "靠墙前倾",
+        "drill.plant_target": "支撑脚对准目标",
+        "drill.shot_form": "射门姿势",
+      },
       statusApiFail: "分析失败：",
       statusFixtureFail: "演示片段加载失败。请从 GitHub Pages 的 /coach-ui/、Render 的 /coach-ui/，或仓库根目录的静态服务打开本页。",
       noKeypoints: "暂无姿态关键节点",
@@ -380,6 +440,7 @@
       hook: "What was wrong with that touch?",
       lead: "Youth players need the next touch fixed, not another replay. Demo mode needs no camera and no MediaPipe.",
       modeFund: "Fundamentals",
+      modeShot: "Shot upload",
       modeSig: "Signature Moves",
       btnDemo: "Demo mode",
       btnJump: "Jump to problem frame",
@@ -425,6 +486,33 @@
       statusNeedFile: "Please choose a video file first.",
       statusNoApi: "No video API on this page. Use Demo mode.",
       statusUseDemo: "Use Demo mode instead.",
+      shotTitle: "Shot upload",
+      shotLead: "Instep shots only. Pick a side-view clip, put it in S3, then score it by s3_key.",
+      shotFileLabel: "Choose a shot video",
+      shotCameraLabel: "Record a shot",
+      btnShotUpload: "Upload and analyze",
+      shotHint: "Upload uses the public presign API. Analysis calls this site’s /analyze/shot. The contest service needs SHOT_BUCKET, AWS keys, and requirements-comp.txt (OpenCV and boto3). Override with ?presign= and ?api=. Bedrock is not wired.",
+      shotPresign: "Requesting an upload URL…",
+      shotPutting: "Uploading the video to S3…",
+      shotAnalyzing: "Analyzing the shot…",
+      shotDone: "Shot analysis complete.",
+      shotNeedFile: "Choose or record a shot video first.",
+      shotNeedApi: "No shot API on this page. Open it with ?api=https://your-contest-service",
+      shotBadPresign: "Could not get an upload URL: ",
+      shotPutFail: "S3 upload failed: ",
+      shotScoreLabel: "Score",
+      shotNext: "Next",
+      shotDrillLabel: "Drill",
+      shotActions: {
+        request_re_record: "Re-record",
+        assign_drill: "Do this drill",
+        accept_and_coach: "This strike is fine",
+      },
+      drills: {
+        "drill.lean_wall": "Lean into the wall",
+        "drill.plant_target": "Plant toward the target",
+        "drill.shot_form": "Shot form",
+      },
       statusApiFail: "Analysis failed: ",
       statusFixtureFail: "Could not load the demo clip. Open this page from GitHub Pages /coach-ui/, Render /coach-ui/, or a static server at the repo root.",
       noKeypoints: "No keypoints yet",
@@ -450,6 +538,9 @@
   let preview = null;
   let scenarioId = "pass.inside";
   let selectedFile = null;
+  let selectedShotFile = null;
+  let lastShot = null;
+  const DEFAULT_PRESIGN_URL = "https://s14hcf6sc0.execute-api.ap-southeast-1.amazonaws.com/presign";
   let demoToken = 0;
   let clipTimer = null;
   let clipGen = 0;
@@ -1028,10 +1119,147 @@
 
   function setMode(mode) {
     document.body.classList.toggle("mode-sig", mode === "sig");
+    document.body.classList.toggle("mode-shot", mode === "shot");
     $("modeFund").classList.toggle("on", mode === "fund");
     $("modeSig").classList.toggle("on", mode === "sig");
+    $("modeShot").classList.toggle("on", mode === "shot");
     localStorage.setItem("aifc_mode", mode);
     if (mode === "sig") loadSignatureMoves();
+  }
+
+  function presignUrl() {
+    const fromQuery = new URLSearchParams(location.search).get("presign");
+    if (fromQuery) return fromQuery;
+    try {
+      const stored = localStorage.getItem("aifc_presign_url");
+      if (stored) return stored;
+    } catch (ignore) { /* private mode */ }
+    return DEFAULT_PRESIGN_URL;
+  }
+
+  function shotAnalyzeUrl() {
+    const fromQuery = new URLSearchParams(location.search).get("api");
+    let base = fromQuery;
+    if (!base) {
+      try { base = localStorage.getItem("aifc_shot_api"); } catch (ignore) { base = ""; }
+    }
+    if (base) {
+      const trimmed = String(base).replace(/\/$/, "");
+      if (trimmed.endsWith("/analyze/shot")) return trimmed;
+      return trimmed + "/analyze/shot";
+    }
+    const host = location.hostname || "";
+    if (host.endsWith("github.io")) return "";
+    if (location.protocol.indexOf("http") === 0 && host) {
+      return new URL("/analyze/shot", location.origin).href;
+    }
+    return "http://127.0.0.1:8000/analyze/shot";
+  }
+
+  function setShotStatus(msg, kind) {
+    const el = $("shotStatus");
+    el.textContent = msg || "";
+    el.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function shotFilename(file) {
+    const raw = String((file && file.name) || "clip.mp4").split(/[/\\]/).pop();
+    const cleaned = raw.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 80);
+    return cleaned || "clip.mp4";
+  }
+
+  function shotContentType(file) {
+    const kind = (file && file.type) || "";
+    return kind.indexOf("video/") === 0 ? kind : "video/mp4";
+  }
+
+  function renderShotResult(data) {
+    lastShot = data;
+    $("shotResult").hidden = false;
+    const agent = data.agent || {};
+    const action = agent.next_action || "";
+    const zh = data.coaching_zh || "";
+    const en = data.coaching_en || "";
+    $("shotSentence").textContent = lang === "zh" ? (zh || en) : (en || zh);
+    $("shotSentenceSub").textContent = lang === "zh" ? (zh ? en : "") : (en ? zh : "");
+    const hideScore = action === "request_re_record" || data.score == null;
+    $("shotScore").hidden = hideScore;
+    $("shotTip").className = action === "request_re_record" ? "tip" : (action === "accept_and_coach" ? "tip ok" : "tip");
+    if (!hideScore) $("shotScore").textContent = t().shotScoreLabel + " " + data.score;
+    const actionLabels = t().shotActions || {};
+    $("shotAction").textContent = t().shotNext + " · " + (actionLabels[action] || action || "—");
+    const drill = agent.drill_id;
+    const showDrill = action === "assign_drill" && !!drill;
+    $("shotDrill").hidden = !showDrill;
+    if (showDrill) {
+      const drills = t().drills || {};
+      $("shotDrill").textContent = t().shotDrillLabel + " · " + (drills[drill] || drill);
+    }
+    const key = data.source && data.source.s3_key;
+    $("shotKey").textContent = key ? ("s3_key " + key) : "";
+  }
+
+  function rememberShotFile(file) {
+    selectedShotFile = file || null;
+    $("btnShotUpload").disabled = !selectedShotFile;
+    if (selectedShotFile) {
+      setShotStatus((lang === "zh" ? "已选择：" : "Selected: ") + selectedShotFile.name);
+    }
+  }
+
+  async function analyzeShotFile(file) {
+    if (!file) { setShotStatus(t().shotNeedFile, "err"); return; }
+    const analyzeUrl = shotAnalyzeUrl();
+    if (!analyzeUrl) { setShotStatus(t().shotNeedApi, "err"); return; }
+    $("btnShotUpload").disabled = true;
+    $("shotResult").hidden = true;
+    lastShot = null;
+    const contentType = shotContentType(file);
+    setShotStatus(t().shotPresign);
+    try {
+      const presignRes = await fetch(presignUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: shotFilename(file), content_type: contentType }),
+      });
+      const presignText = await presignRes.text();
+      let presign = null;
+      try { presign = JSON.parse(presignText); } catch (ignore) { presign = null; }
+      if (!presignRes.ok || !presign || !presign.upload_url || !presign.s3_key) {
+        throw new Error(t().shotBadPresign + errorDetail(presign, presignRes.status + " " + presignRes.statusText));
+      }
+      setShotStatus(t().shotPutting);
+      const putHeaders = {};
+      const srcHeaders = presign.headers || { "Content-Type": contentType };
+      Object.keys(srcHeaders).forEach((name) => {
+        if (String(name).toLowerCase() === "host") return;
+        putHeaders[name] = srcHeaders[name];
+      });
+      const put = await fetch(presign.upload_url, { method: "PUT", body: file, headers: putHeaders });
+      if (!put.ok) throw new Error(t().shotPutFail + put.status);
+      setShotStatus(t().shotAnalyzing);
+      const res = await fetch(analyzeUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ s3_key: presign.s3_key, max_seconds: 10 }),
+      });
+      const text = await res.text();
+      let data = null;
+      try { data = JSON.parse(text); } catch (ignore) { data = null; }
+      if (!res.ok) {
+        const detail = errorDetail(data, res.status + " " + res.statusText);
+        const stale = res.status === 501 ? (lang === "zh" ? "（服务端还没有接上 s3_key）" : " (this server still rejects s3_key)") : "";
+        throw new Error(t().statusApiFail + detail + stale);
+      }
+      if (!data) throw new Error(t().statusApiFail + (res.statusText || "empty response"));
+      renderShotResult(data);
+      setShotStatus(t().shotDone, "ok");
+    } catch (e) {
+      const message = (e && e.message) ? e.message : String(e);
+      setShotStatus(message, "err");
+    } finally {
+      $("btnShotUpload").disabled = !selectedShotFile;
+    }
   }
 
   function fillSkillOptions() {
@@ -1054,6 +1282,9 @@
     if (state.data) render(state.data);
     if (sigCatalog && document.body.classList.contains("mode-sig")) renderSignature(sigCatalog);
     if (sigCatalog && !$("results").hidden && state.data) renderTease(sigCatalog);
+    $("shotFile").setAttribute("aria-label", t().shotFileLabel);
+    $("shotCamera").setAttribute("aria-label", t().shotCameraLabel);
+    if (lastShot) renderShotResult(lastShot);
     const jumping = !$("progressBar").hidden;
     if (jumping) {
       $("tipMain").textContent = t().analyzing;
@@ -1063,6 +1294,7 @@
   $("langZh").onclick = () => { lang = "zh"; localStorage.setItem("aifc_lang", lang); applyI18n(); };
   $("langEn").onclick = () => { lang = "en"; localStorage.setItem("aifc_lang", lang); applyI18n(); };
   $("modeFund").onclick = () => setMode("fund");
+  $("modeShot").onclick = () => setMode("shot");
   $("modeSig").onclick = () => setMode("sig");
   $("btnDemo").onclick = () => startDemo();
   $("btnAnalyzeClip").onclick = () => analyzeClip();
@@ -1076,6 +1308,9 @@
     if (selectedFile) setStatus((lang === "zh" ? "已选择：" : "Selected: ") + selectedFile.name);
   };
   $("btnAnalyze").onclick = () => analyzeFile(selectedFile);
+  $("shotFile").onchange = (e) => rememberShotFile(e.target.files && e.target.files[0]);
+  $("shotCamera").onchange = (e) => rememberShotFile(e.target.files && e.target.files[0]);
+  $("btnShotUpload").onclick = () => analyzeShotFile(selectedShotFile);
 
   const dz = $("dropzone");
   ["dragenter", "dragover"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("drag"); }));
@@ -1091,7 +1326,8 @@
 
   applyI18n();
   setStatus(t().statusReady);
-  setMode(localStorage.getItem("aifc_mode") === "sig" ? "sig" : "fund");
+  const storedMode = localStorage.getItem("aifc_mode");
+  setMode(storedMode === "sig" || storedMode === "shot" ? storedMode : "fund");
 })();
   </script>
 </body>

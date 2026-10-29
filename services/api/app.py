@@ -5,13 +5,15 @@ GET  /health   — liveness + model path
 """
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
+import asyncio
 import json
 import shutil
 import sys
 import tempfile
+import threading
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -42,6 +44,58 @@ from pipeline.model.skeleton_probe import (  # noqa: E402
 from pipeline.pose.load_mediapipe_json import load_mediapipe_json  # noqa: E402
 from pipeline.pose.video_to_mp33 import video_to_mp33  # noqa: E402
 from pipeline.rules_engine import evaluate_rules  # noqa: E402
+from pipeline.pose.shot_clip_limits import (  # noqa: E402
+    MAX_SHOT_BYTES,
+    ShotClipLimitError,
+    release_shot_memory,
+    shot_too_large_detail,
+)
+from pipeline.shot.scoring import SHOT_LABEL_ID, score_shot_clip  # noqa: E402
+from services.api.shot_s3 import (  # noqa: E402
+    ShotStorageError,
+    download_shot_object,
+    shot_bucket,
+    shot_s3_status,
+)
+
+# One decoded shot clip at a time. A second caller is rejected instead of
+# stacking another frame buffer on the 512Mi instance.
+_shot_video_lock = threading.Lock()
+SHOT_VIDEO_BUSY_DETAIL = "busy: shot analysis already running"
+_UPLOAD_CHUNK_BYTES = 1024 * 1024
+
+
+@contextmanager
+def _shot_video_slot() -> Iterator[None]:
+    """Hold the single shot-video slot, then return freed native memory to the OS."""
+    if not _shot_video_lock.acquire(blocking=False):
+        raise HTTPException(status_code=429, detail=SHOT_VIDEO_BUSY_DETAIL)
+    try:
+        yield
+    finally:
+        try:
+            release_shot_memory()
+        finally:
+            _shot_video_lock.release()
+
+
+def _write_upload_capped(upload: UploadFile, dest: Path) -> None:
+    """Copy an upload to disk, stopping once it passes the shot size cap."""
+    declared = getattr(upload, "size", None)
+    if declared is not None and int(declared) > MAX_SHOT_BYTES:
+        raise HTTPException(status_code=413, detail=shot_too_large_detail())
+    total = 0
+    with dest.open("wb") as out:
+        while True:
+            chunk = upload.file.read(_UPLOAD_CHUNK_BYTES)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_SHOT_BYTES:
+                raise HTTPException(status_code=413, detail=shot_too_large_detail())
+            out.write(chunk)
+    if total <= 0:
+        raise HTTPException(status_code=400, detail="Empty video upload.")
 
 DEFAULT_ONNX = REPO_ROOT / "models" / "youth_football_probe.onnx"
 
@@ -58,11 +112,12 @@ async def _lifespan(_app: FastAPI):
 
 app = FastAPI(
     title="AI Football Coach Analyze API",
-    version="0.3.0",
+    version="0.4.0",
     description=(
         "Youth technique coaching API / 青少年技术纠错 API\n\n"
         "EN: pose or video → skill label + geometric correction tips + evidence frame.\n"
         "中文：姿态或视频 → 技术动作类别 + 几何纠错建议 + 证据帧。\n\n"
+        "Shooting slice / 射门: POST /analyze/shot returns score 0–100 and one correction.\n\n"
         "Friendly docs: `/docs` · Classic Swagger: `/swagger` · OpenAPI: `/openapi.json`"
     ),
     lifespan=_lifespan,
@@ -149,6 +204,30 @@ class AnalyzeRequest(BaseModel):
     fps: float = 30.0
     T: int | None = None
     V: int | None = None
+
+
+def _load_keypoints_array(
+    *,
+    keypoints: list | np.ndarray | None,
+    pose_path: str | None,
+    topology: str | None,
+) -> tuple[np.ndarray, str | None]:
+    """Resolve a pose body into an array plus topology. Shared by /analyze and /analyze/shot."""
+    if keypoints is not None:
+        return np.asarray(keypoints, dtype=np.float64), topology
+    if pose_path:
+        path = Path(pose_path)
+        if not path.is_file():
+            alt = REPO_ROOT / pose_path
+            path = alt if alt.is_file() else path
+        if not path.is_file():
+            raise HTTPException(status_code=400, detail=f"pose_path not found: {pose_path}")
+        kps, meta = load_mediapipe_json(path)
+        return kps, topology or meta.get("topology")
+    raise HTTPException(
+        status_code=400,
+        detail="Provide keypoints (T×V×C) or pose_path",
+    )
 
 
 def _to_coco17(keypoints: np.ndarray, topology: str | None) -> np.ndarray:
@@ -298,30 +377,44 @@ def health() -> dict[str, Any]:
         "onnx_present": ok,
         "num_classes": NUM_CLASSES,
         "class_ids": list(CLASS_IDS),
+        "shot": _shot_health(),
     }
+
+
+def _shot_health() -> dict[str, Any]:
+    """Pose-file presence only. Do not import cv2 here — deploy has no OpenCV."""
+    from pipeline.pose.opencv_dnn_pose import find_pose_model
+
+    model = find_pose_model()
+    return {
+        "label_id": SHOT_LABEL_ID,
+        "routes": ["/analyze/shot", "/analyze/shot/video"],
+        "pose_model_present": model is not None,
+        "pose_model_path": str(model) if model else None,
+        "s3": shot_s3_status(),
+    }
+
+
+def _shot_confidence(coco: np.ndarray) -> float | None:
+    """Probability of shot.instep. Missing ONNX does not block geometric scoring."""
+    try:
+        sess = _get_session()
+    except FileNotFoundError:
+        return None
+    nctv = preprocess_tvx_to_nctv(coco, t_out=DEFAULT_T, normalize=True)
+    logits = sess.run(None, {"pose": nctv})[0]
+    probs = _softmax(logits)[0]
+    return float(probs[CLASS_IDS.index(SHOT_LABEL_ID)])
 
 
 @app.post("/analyze", summary="Analyze pose JSON / 分析姿态 JSON", tags=["core"])
 def analyze(body: AnalyzeRequest) -> dict[str, Any]:
     try:
-        if body.keypoints is not None:
-            kps = np.asarray(body.keypoints, dtype=np.float64)
-            topo = body.topology
-        elif body.pose_path:
-            path = Path(body.pose_path)
-            if not path.is_file():
-                alt = REPO_ROOT / body.pose_path
-                path = alt if alt.is_file() else path
-            if not path.is_file():
-                raise HTTPException(status_code=400, detail=f"pose_path not found: {body.pose_path}")
-            kps, meta = load_mediapipe_json(path)
-            topo = body.topology or meta.get("topology")
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Provide keypoints (T×V×C) or pose_path",
-            )
-
+        kps, topo = _load_keypoints_array(
+            keypoints=body.keypoints,
+            pose_path=body.pose_path,
+            topology=body.topology,
+        )
         coco = _to_coco17(kps, topo)
         return analyze_coco17(coco, label_id_hint=body.label_id, fps=body.fps)
     except HTTPException:
@@ -369,6 +462,199 @@ async def analyze_video(
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
+class ShotAnalyzeRequest(BaseModel):
+    """Shooting-only body. The skill is always shot.instep.
+
+    Provide keypoints, pose_path, or ``s3_key`` (an ``uploads/…`` object).
+    When ``s3_key`` is set it is fetched from ``SHOT_BUCKET`` and scored as a
+    video; keypoints in the same body are ignored. There is no label_id field:
+    this path cannot return a pass, dribble, or first-touch result.
+    """
+
+    keypoints: list[list[list[float]]] | None = None
+    pose_path: str | None = None
+    topology: str | None = Field(
+        default=None,
+        description="coco17 | mediapipe33. Inferred from V when omitted.",
+    )
+    fps: float = 30.0
+    s3_key: str | None = Field(
+        default=None,
+        description="S3 object key under uploads/. Requires SHOT_BUCKET and AWS credentials.",
+    )
+    max_seconds: float = Field(default=10.0, gt=0, le=30)
+
+
+def _score_shot_response(
+    coco: np.ndarray,
+    *,
+    fps: float,
+    image_quality: dict[str, Any] | None = None,
+    frame_wh: tuple[int, int] | None = None,
+    opencv_meta: dict[str, Any] | None = None,
+    source: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    result = score_shot_clip(
+        coco,
+        fps=fps,
+        confidence=_shot_confidence(coco),
+        image_quality=image_quality,
+        frame_wh=frame_wh,
+        opencv_meta=opencv_meta,
+    )
+    if source is not None:
+        result["source"] = source
+    return result
+
+
+def _score_shot_file(
+    dest: Path,
+    *,
+    filename: str | None,
+    max_seconds: float,
+    source: dict[str, Any],
+) -> dict[str, Any]:
+    """OpenCV decode + DNN pose, then the shooting score. Shared by upload and S3."""
+    from pipeline.pose.opencv_dnn_pose import PoseModelMissingError, video_to_coco17_opencv
+
+    if max_seconds <= 0 or max_seconds > 30:
+        raise HTTPException(status_code=400, detail="max_seconds must be in (0, 30]")
+    coco = None
+    try:
+        try:
+            coco, fps, meta = video_to_coco17_opencv(
+                dest,
+                max_frames=120,
+                max_seconds=float(max_seconds),
+            )
+        except ShotClipLimitError as exc:
+            raise HTTPException(status_code=413, detail=exc.detail) from exc
+        except PoseModelMissingError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ImportError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        wh = meta.get("frame_wh") or [0, 0]
+        frame_wh = (int(wh[0]), int(wh[1])) if wh and wh[0] and wh[1] else None
+        opencv_meta = {
+            "version": meta.get("opencv_version"),
+            "pose_backend": meta.get("pose_backend"),
+            "frames_used": int(meta.get("frames") or coco.shape[0]),
+            "compliant": meta.get("opencv_compliant"),
+            "dnn_engine": meta.get("dnn_engine"),
+            "pinned": "5.0.0.93",
+        }
+        source = dict(source)
+        source["fps"] = fps
+        return _score_shot_response(
+            coco,
+            fps=fps,
+            image_quality=meta.get("quality"),
+            frame_wh=frame_wh,
+            opencv_meta=opencv_meta,
+            source=source,
+        )
+    finally:
+        # Keypoints are copied into the JSON result. Drop the array before
+        # the slot returns memory to the OS.
+        del coco
+
+
+def _analyze_shot_from_s3(s3_key: str, *, max_seconds: float) -> dict[str, Any]:
+    """Download uploads/<id>.<ext> from SHOT_BUCKET, then score it as a shot video."""
+    suffix = Path(s3_key.strip()).suffix.lower() or ".mp4"
+    tmp_dir = Path(tempfile.mkdtemp(prefix="aifc_shot_s3_"))
+    dest = tmp_dir / f"object{suffix}"
+    try:
+        try:
+            key = download_shot_object(s3_key, dest)
+        except ShotStorageError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+        return _score_shot_file(
+            dest,
+            filename=Path(key).name,
+            max_seconds=max_seconds,
+            source={"type": "s3", "s3_key": key, "bucket": shot_bucket()},
+        )
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+@app.post(
+    "/analyze/shot",
+    summary="Score an instep shot / 射门评分（仅射门）",
+    tags=["shot"],
+)
+def analyze_shot(body: ShotAnalyzeRequest) -> dict[str, Any]:
+    """Return 0–100 and one coaching sentence for shot.instep.
+
+    Keypoints work on the Render deploy image. ``s3_key`` downloads the object
+    with boto3 and then uses the OpenCV video path. That path needs
+    requirements-comp.txt, which the live deploy image does not install.
+    """
+    s3_key = (body.s3_key or "").strip()
+    if s3_key:
+        with _shot_video_slot():
+            return _analyze_shot_from_s3(s3_key, max_seconds=body.max_seconds)
+    try:
+        kps, topo = _load_keypoints_array(
+            keypoints=body.keypoints,
+            pose_path=body.pose_path,
+            topology=body.topology,
+        )
+        coco = _to_coco17(kps, topo)
+        return _score_shot_response(coco, fps=body.fps)
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post(
+    "/analyze/shot/video",
+    summary="Score a shot video / 上传射门视频评分",
+    tags=["shot"],
+)
+async def analyze_shot_video(
+    file: UploadFile = File(..., description="Side-view instep shot, up to 10 seconds"),
+    max_seconds: float = Form(default=10.0),
+) -> dict[str, Any]:
+    """OpenCV 5 decode + DNN pose, then the same shooting score as /analyze/shot.
+
+    MediaPipe is not the primary backend. It runs only when the process has
+    AIFC_ALLOW_MP_FALLBACK=1 and the ONNX pose file is missing.
+
+    One analysis runs at a time. A concurrent caller gets 429. Clips over
+    20 MB, 12 seconds, or 720p get 413. Pose runs frame by frame so the
+    decoded clip is not kept in RAM.
+    """
+    suffix = Path(file.filename or "clip.mp4").suffix.lower() or ".mp4"
+    if suffix not in {".mp4", ".webm", ".mov", ".avi", ".mkv"}:
+        raise HTTPException(status_code=400, detail=f"Unsupported video type: {suffix}")
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="aifc_shot_"))
+    dest = tmp_dir / f"upload{suffix}"
+    try:
+        _write_upload_capped(file, dest)
+        # Score off the event loop so a second request can observe the lock
+        # and return 429 while this one is still inside OpenCV.
+        with _shot_video_slot():
+            return await asyncio.to_thread(
+                _score_shot_file,
+                dest,
+                filename=file.filename,
+                max_seconds=float(max_seconds),
+                source={"type": "video", "filename": file.filename},
+            )
+    except HTTPException:
+        raise
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
 def _load_signature_catalog() -> dict[str, Any]:
     path = REPO_ROOT / "labels" / "signature_moves.json"
     return json.loads(path.read_text(encoding="utf-8"))
@@ -389,6 +675,15 @@ def list_modes() -> dict[str, Any]:
                 "name_en": "Youth fundamentals",
                 "status": "live",
                 "api": ["/analyze", "/analyze/video"],
+            },
+            {
+                "id": "shot",
+                "name_zh": "射门纠错",
+                "name_en": "Instep shot",
+                "status": "competition",
+                "api": ["/analyze/shot", "/analyze/shot/video"],
+                "scope_zh": "仅射门。分数 0–100，一句纠错。",
+                "scope_en": "Shooting only. Score 0–100 and one correction sentence.",
             },
             {
                 "id": "signature_move",
