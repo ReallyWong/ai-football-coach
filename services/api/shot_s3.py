@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-MAX_SHOT_BYTES = 80 * 1024 * 1024
+from pipeline.pose.shot_clip_limits import MAX_SHOT_BYTES, shot_too_large_detail
 _PREFIX = "uploads/"
 _ALLOWED_SUFFIXES = {".mp4", ".webm", ".mov", ".avi", ".mkv"}
 DEFAULT_REGION = "ap-southeast-1"
@@ -153,7 +153,7 @@ def download_shot_object(s3_key: str, dest: Path) -> str:
         if size <= 0:
             raise ShotStorageError(400, "The S3 object is empty.")
         if size > MAX_SHOT_BYTES:
-            raise ShotStorageError(413, "The shot clip is larger than 80 MB.")
+            raise ShotStorageError(413, shot_too_large_detail())
         client.download_file(bucket, key, str(dest))
     except ShotStorageError:
         raise
@@ -166,5 +166,5 @@ def download_shot_object(s3_key: str, dest: Path) -> str:
         raise ShotStorageError(502, "S3 download produced an empty file.")
     if dest.stat().st_size > MAX_SHOT_BYTES:
         dest.unlink(missing_ok=True)
-        raise ShotStorageError(413, "The shot clip is larger than 80 MB.")
+        raise ShotStorageError(413, shot_too_large_detail())
     return key

@@ -28,24 +28,57 @@ MIN_OK_JOINTS = 8
 _CORE_JOINTS = (5, 6, 11, 12)
 
 
+def measure_blur_brightness(frame: Any) -> tuple[float, float]:
+    """Laplacian variance and mean brightness for one BGR frame.
+
+    The gray image and Laplacian are temporaries. Callers that stream video
+    should drop the frame after this returns.
+    """
+    import cv2
+
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    try:
+        blur = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+        bright = float(np.mean(gray))
+    finally:
+        del gray
+    return blur, bright
+
+
+def quality_from_measurements(
+    blurs: list[float],
+    brights: list[float],
+) -> dict[str, float | int]:
+    """Median blur and brightness at the first, middle, and last samples.
+
+    ``frames`` is the full sample count, matching :func:`quality_gates`.
+    """
+    n = len(blurs)
+    if n == 0 or n != len(brights):
+        return {"blur_var": 0.0, "brightness": 0.0, "frames": int(n)}
+    sample_at = sorted({0, n // 2, n - 1})
+    return {
+        "blur_var": float(np.median([blurs[index] for index in sample_at])),
+        "brightness": float(np.median([brights[index] for index in sample_at])),
+        "frames": int(n),
+    }
+
+
 def quality_gates(frames_bgr: list[Any]) -> dict[str, float | int]:
     """Blur and brightness on a few sample frames. Does not import cv2 until called.
 
     ``pass`` is computed later by :func:`merge_quality` once pose stats exist.
     """
-    import cv2
-
     if not frames_bgr:
         return {"blur_var": 0.0, "brightness": 0.0, "frames": 0}
 
     n = len(frames_bgr)
-    sample_at = sorted({0, n // 2, n - 1})
     blurs: list[float] = []
     brights: list[float] = []
-    for index in sample_at:
-        gray = cv2.cvtColor(frames_bgr[index], cv2.COLOR_BGR2GRAY)
-        blurs.append(float(cv2.Laplacian(gray, cv2.CV_64F).var()))
-        brights.append(float(np.mean(gray)))
+    for index in sorted({0, n // 2, n - 1}):
+        blur, bright = measure_blur_brightness(frames_bgr[index])
+        blurs.append(blur)
+        brights.append(bright)
     return {
         "blur_var": float(np.median(blurs)),
         "brightness": float(np.median(brights)),

@@ -24,7 +24,25 @@ from typing import Any, Callable
 
 import numpy as np
 
-from pipeline.pose.quality_gates import merge_quality, pose_quality, quality_gates
+from pipeline.pose.quality_gates import (
+    measure_blur_brightness,
+    merge_quality,
+    pose_quality,
+    quality_from_measurements,
+    quality_gates,
+)
+from pipeline.pose.shot_clip_limits import (
+    MAX_SHOT_BYTES,
+    MAX_SHOT_SECONDS,
+    SHOT_DURATION_SLACK_SECONDS,
+    ShotClipLimitError,
+    duration_limit_detail,
+    duration_over_limit,
+    release_shot_memory,
+    resolution_limit_detail,
+    resolution_over_limit,
+    shot_too_large_detail,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 POSE_DIR = REPO_ROOT / "models" / "pose"
@@ -378,23 +396,131 @@ def render_skeleton_bgr(frame_bgr: np.ndarray, keypoints_17x3: np.ndarray) -> np
     return canvas
 
 
+def _capture_fps(cap: Any, cv2_module: Any) -> float:
+    fps = float(cap.get(cv2_module.CAP_PROP_FPS) or 0.0)
+    if not np.isfinite(fps) or fps < 1.0:
+        return 30.0
+    return fps
+
+
+def _metadata_duration_seconds(cap: Any, cv2_module: Any, fps: float) -> float | None:
+    frame_count = float(cap.get(cv2_module.CAP_PROP_FRAME_COUNT) or 0.0)
+    if not np.isfinite(frame_count) or frame_count <= 0 or fps <= 0:
+        return None
+    return frame_count / fps
+
+
+def _frame_wh(frame: np.ndarray) -> tuple[int, int]:
+    height, width = int(frame.shape[0]), int(frame.shape[1])
+    if resolution_over_limit(width, height):
+        raise ShotClipLimitError(resolution_limit_detail(width, height))
+    return width, height
+
+
+def _reject_if_too_long(seen_frames: int, fps: float) -> None:
+    seconds = seen_frames / fps if fps > 0 else float(seen_frames)
+    if duration_over_limit(seconds):
+        raise ShotClipLimitError(duration_limit_detail(seconds))
+
+
+def _scan_unknown_duration(
+    cap: Any,
+    cv2_module: Any,
+    path: Path,
+    fps: float,
+    width: int,
+    height: int,
+) -> tuple[Any, int, int]:
+    """Read-and-drop until the duration cap. Reopen so pose can start at frame 0.
+
+    Used only when the container does not report a frame count. One frame is
+    live at a time.
+    """
+    limit_frames = max(
+        1,
+        int(np.floor((MAX_SHOT_SECONDS + SHOT_DURATION_SLACK_SECONDS) * fps)),
+    )
+    seen = 0
+    while seen <= limit_frames:
+        ok, frame = cap.read()
+        if not ok:
+            break
+        try:
+            if width <= 0 or height <= 0:
+                width, height = _frame_wh(frame)
+        finally:
+            del frame
+        seen += 1
+    else:
+        # One frame past the cap is enough to reject. Do not read the rest.
+        _reject_if_too_long(seen, fps)
+    # Pose must start at frame 0. Reopen so a codec that cannot seek still works.
+    # On failure the original capture stays open and the caller releases it.
+    reopened = cv2_module.VideoCapture(str(path))
+    if not reopened.isOpened():
+        reopened.release()
+        raise ValueError(f"Could not open video: {path}")
+    cap.release()
+    return reopened, width, height
+
+
+def _open_limited_capture(path: Path) -> tuple[Any, float, int, int]:
+    """Open ``path`` or raise ``ShotClipLimitError`` / ``ValueError``.
+
+    Returns the capture positioned at the first frame, plus fps and frame size.
+    Frame size may be ``(0, 0)`` when the container does not advertise it; the
+    first decoded frame is checked later.
+    """
+    cv2 = _require_cv2()
+    try:
+        cv2.setNumThreads(1)
+    except Exception:
+        pass
+    if path.is_file() and path.stat().st_size > MAX_SHOT_BYTES:
+        raise ShotClipLimitError(shot_too_large_detail())
+    cap = cv2.VideoCapture(str(path))
+    if not cap.isOpened():
+        cap.release()
+        raise ValueError(f"Could not open video: {path}")
+    try:
+        fps = _capture_fps(cap, cv2)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+        if resolution_over_limit(width, height):
+            raise ShotClipLimitError(resolution_limit_detail(width, height))
+        duration = _metadata_duration_seconds(cap, cv2, fps)
+        if duration is None:
+            cap, width, height = _scan_unknown_duration(cap, cv2, path, fps, width, height)
+        elif duration_over_limit(duration):
+            raise ShotClipLimitError(duration_limit_detail(duration))
+        return cap, fps, width, height
+    except Exception:
+        cap.release()
+        raise
+
+
+def _sample_plan(fps: float, max_frames: int, max_seconds: float) -> tuple[int, int]:
+    """Same stride as the previous full-buffer decoder. The file duration cap is separate."""
+    max_to_consider = max(1, int(float(max_seconds) * fps))
+    stride = max(1, int(np.ceil(max_to_consider / max(1, max_frames))))
+    return max_to_consider, stride
+
+
 def decode_video_frames(
     video_path: str | Path,
     *,
     max_frames: int = 120,
     max_seconds: float = 10.0,
 ) -> tuple[list[np.ndarray], float]:
-    """Read up to ``max_seconds`` of video, subsampled to ``max_frames``."""
-    cv2 = _require_cv2()
+    """Read up to ``max_seconds`` of video, subsampled to ``max_frames``.
+
+    Materializes the sampled frames. The shot API does not use this; it poses
+    one frame at a time. Kept for tests and callers that explicitly want a list,
+    and it still refuses clips over the 512Mi caps.
+    """
     path = Path(video_path)
-    cap = cv2.VideoCapture(str(path))
-    if not cap.isOpened():
-        raise ValueError(f"Could not open video: {path}")
-    fps = float(cap.get(cv2.CAP_PROP_FPS) or 30.0) or 30.0
-    if fps < 1.0:
-        fps = 30.0
-    max_to_consider = max(1, int(float(max_seconds) * fps))
-    stride = max(1, int(np.ceil(max_to_consider / max(1, max_frames))))
+    cap, fps, _width, _height = _open_limited_capture(path)
+    max_to_consider, stride = _sample_plan(fps, max_frames, max_seconds)
     frames: list[np.ndarray] = []
     index = 0
     try:
@@ -403,13 +529,54 @@ def decode_video_frames(
             if not ok:
                 break
             if index % stride == 0:
+                _frame_wh(frame)
                 frames.append(frame)
+            else:
+                del frame
             index += 1
     finally:
         cap.release()
     if not frames:
         raise ValueError("No frames decoded")
     return frames, fps
+
+
+def _stream_pose_rows(
+    cap: Any,
+    *,
+    fps: float,
+    width: int,
+    height: int,
+    max_frames: int,
+    max_seconds: float,
+    forward: Callable[[np.ndarray], np.ndarray],
+) -> tuple[np.ndarray, list[float], list[float], int, int]:
+    """Pose and quality one sampled frame at a time. Does not keep the images."""
+    max_to_consider, stride = _sample_plan(fps, max_frames, max_seconds)
+    rows: list[np.ndarray] = []
+    blurs: list[float] = []
+    brights: list[float] = []
+    index = 0
+    while index < max_to_consider and len(rows) < max_frames:
+        ok, frame = cap.read()
+        if not ok:
+            break
+        try:
+            if index % stride == 0:
+                width, height = _frame_wh(frame)
+                row = np.asarray(forward(frame), dtype=np.float64)
+                if row.shape != (17, 3):
+                    raise ValueError(f"Pose forward must return (17, 3), got {row.shape}")
+                blur, bright = measure_blur_brightness(frame)
+                rows.append(row)
+                blurs.append(blur)
+                brights.append(bright)
+        finally:
+            del frame
+        index += 1
+    if not rows:
+        raise ValueError("No frames decoded")
+    return np.stack(rows, axis=0), blurs, brights, width, height
 
 
 def analyze_bgr_frames(
@@ -459,6 +626,32 @@ def analyze_bgr_frames(
     return coco, meta
 
 
+def _meta_for_pose(
+    coco: np.ndarray,
+    image_q: dict[str, Any],
+    *,
+    width: int,
+    height: int,
+    backend: str,
+    engine_name: str | None,
+    fps: float,
+    max_seconds: float,
+) -> dict[str, Any]:
+    pose_q = pose_quality(coco, frame_wh=(width, height))
+    info = opencv_runtime_info()
+    return {
+        "opencv_version": info["version"],
+        "opencv_compliant": info["compliant"],
+        "quality": merge_quality(image_q, pose_q),
+        "frames": int(coco.shape[0]),
+        "pose_backend": backend,
+        "dnn_engine": engine_name,
+        "frame_wh": [int(width), int(height)],
+        "fps": fps,
+        "max_seconds": float(max_seconds),
+    }
+
+
 def video_to_coco17_opencv(
     video_path: str | Path,
     *,
@@ -470,54 +663,133 @@ def video_to_coco17_opencv(
 ) -> tuple[np.ndarray, float, dict[str, Any]]:
     """Decode with OpenCV and estimate COCO-17 pose.
 
-    Fallback to MediaPipe runs only when explicitly enabled and the ONNX file
-    is missing. OpenCV still decodes the clip and records the quality gate.
+    Frames are posed one at a time and dropped before the next read, so a
+    720p clip does not keep the whole sample list in RAM. Fallback to
+    MediaPipe runs only when explicitly enabled and the ONNX file is missing.
     """
     if allow_mediapipe_fallback is None:
         allow_mediapipe_fallback = os.environ.get("AIFC_ALLOW_MP_FALLBACK", "") == "1"
 
-    frames, fps = decode_video_frames(
-        video_path,
-        max_frames=max_frames,
-        max_seconds=max_seconds,
-    )
+    path = Path(video_path)
+    cap = None
+    net = None
+    forward = forward_fn
     try:
-        coco, meta = analyze_bgr_frames(
-            frames,
-            forward_fn=forward_fn,
-            model_path=model_path,
+        cap, fps, width, height = _open_limited_capture(path)
+        engine_name = None
+        if forward is None:
+            resolved = find_pose_model(model_path)
+            if resolved is None:
+                cap.release()
+                cap = None
+                if not allow_mediapipe_fallback:
+                    raise PoseModelMissingError(
+                        _missing_model_message(Path(model_path) if model_path else None)
+                    )
+                return _mediapipe_fallback(
+                    path,
+                    max_frames=max_frames,
+                    max_seconds=max_seconds,
+                    frame_wh=(width, height),
+                )
+            net, spec, engine_name = load_pose_net(resolved)
+            backend = f"dnn_{spec.family}"
+
+            def forward(frame: np.ndarray, _net=net, _spec=spec) -> np.ndarray:
+                return infer_frame(_net, _spec, frame)
+        else:
+            backend = "injected"
+
+        coco, blurs, brights, width, height = _stream_pose_rows(
+            cap,
+            fps=fps,
+            width=width,
+            height=height,
+            max_frames=max_frames,
+            max_seconds=max_seconds,
+            forward=forward,
         )
-    except PoseModelMissingError:
-        if not allow_mediapipe_fallback:
-            raise
-        coco, meta = _mediapipe_fallback(video_path, frames, max_frames=max_frames)
-    meta["fps"] = fps
-    meta["max_seconds"] = float(max_seconds)
-    return coco, fps, meta
+        meta = _meta_for_pose(
+            coco,
+            quality_from_measurements(blurs, brights),
+            width=width,
+            height=height,
+            backend=backend,
+            engine_name=engine_name,
+            fps=fps,
+            max_seconds=max_seconds,
+        )
+        del blurs, brights
+        return coco, fps, meta
+    finally:
+        if cap is not None:
+            cap.release()
+        # Drop the closure that owns the DNN net before collection.
+        forward = None
+        net = None
+        release_shot_memory()
+
+
+def _stream_image_quality(
+    video_path: str | Path,
+    *,
+    max_frames: int,
+    max_seconds: float,
+) -> tuple[dict[str, float | int], tuple[int, int]]:
+    """Blur and brightness without retaining frames. One frame is live at a time."""
+    cap, _fps, width, height = _open_limited_capture(Path(video_path))
+    _max_to_consider, stride = _sample_plan(_fps, max_frames, max_seconds)
+    blurs: list[float] = []
+    brights: list[float] = []
+    index = 0
+    try:
+        while index < _max_to_consider and len(blurs) < max_frames:
+            ok, frame = cap.read()
+            if not ok:
+                break
+            try:
+                if index % stride == 0:
+                    width, height = _frame_wh(frame)
+                    blur, bright = measure_blur_brightness(frame)
+                    blurs.append(blur)
+                    brights.append(bright)
+            finally:
+                del frame
+            index += 1
+    finally:
+        cap.release()
+    if not blurs:
+        raise ValueError("No frames decoded")
+    return quality_from_measurements(blurs, brights), (width, height)
 
 
 def _mediapipe_fallback(
     video_path: str | Path,
-    frames: list[np.ndarray],
     *,
     max_frames: int,
-) -> tuple[np.ndarray, dict[str, Any]]:
-    """Last-resort pose. OpenCV has already decoded and measured the frames."""
+    max_seconds: float,
+    frame_wh: tuple[int, int],
+) -> tuple[np.ndarray, float, dict[str, Any]]:
+    """Last-resort pose. MediaPipe reads the file again; OpenCV does not keep frames."""
     from pipeline.adapters.mediapipe_to_coco17 import mediapipe_to_coco17
     from pipeline.pose.video_to_mp33 import video_to_mp33
 
-    mp33, _fps = video_to_mp33(video_path, max_frames=max_frames)
+    mp33, fps = video_to_mp33(video_path, max_frames=max_frames)
     coco = mediapipe_to_coco17(mp33)
-    image_q = quality_gates(frames)
-    height, width = frames[0].shape[:2]
-    info = opencv_runtime_info()
-    meta = {
-        "opencv_version": info["version"],
-        "opencv_compliant": info["compliant"],
-        "quality": merge_quality(image_q, pose_quality(coco, frame_wh=(width, height))),
-        "frames": int(coco.shape[0]),
-        "pose_backend": "mediapipe_fallback",
-        "dnn_engine": None,
-        "frame_wh": [int(width), int(height)],
-    }
-    return coco, meta
+    image_q, measured_wh = _stream_image_quality(
+        video_path,
+        max_frames=max_frames,
+        max_seconds=max_seconds,
+    )
+    width, height = measured_wh if measured_wh[0] and measured_wh[1] else frame_wh
+    meta = _meta_for_pose(
+        coco,
+        image_q,
+        width=int(width),
+        height=int(height),
+        backend="mediapipe_fallback",
+        engine_name=None,
+        fps=float(fps),
+        max_seconds=max_seconds,
+    )
+    return coco, float(fps), meta

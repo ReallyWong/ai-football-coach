@@ -5,13 +5,15 @@ GET  /health   — liveness + model path
 """
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
+import asyncio
 import json
 import shutil
 import sys
 import tempfile
+import threading
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -42,6 +44,12 @@ from pipeline.model.skeleton_probe import (  # noqa: E402
 from pipeline.pose.load_mediapipe_json import load_mediapipe_json  # noqa: E402
 from pipeline.pose.video_to_mp33 import video_to_mp33  # noqa: E402
 from pipeline.rules_engine import evaluate_rules  # noqa: E402
+from pipeline.pose.shot_clip_limits import (  # noqa: E402
+    MAX_SHOT_BYTES,
+    ShotClipLimitError,
+    release_shot_memory,
+    shot_too_large_detail,
+)
 from pipeline.shot.scoring import SHOT_LABEL_ID, score_shot_clip  # noqa: E402
 from services.api.shot_s3 import (  # noqa: E402
     ShotStorageError,
@@ -49,6 +57,45 @@ from services.api.shot_s3 import (  # noqa: E402
     shot_bucket,
     shot_s3_status,
 )
+
+# One decoded shot clip at a time. A second caller is rejected instead of
+# stacking another frame buffer on the 512Mi instance.
+_shot_video_lock = threading.Lock()
+SHOT_VIDEO_BUSY_DETAIL = "busy: shot analysis already running"
+_UPLOAD_CHUNK_BYTES = 1024 * 1024
+
+
+@contextmanager
+def _shot_video_slot() -> Iterator[None]:
+    """Hold the single shot-video slot, then return freed native memory to the OS."""
+    if not _shot_video_lock.acquire(blocking=False):
+        raise HTTPException(status_code=429, detail=SHOT_VIDEO_BUSY_DETAIL)
+    try:
+        yield
+    finally:
+        try:
+            release_shot_memory()
+        finally:
+            _shot_video_lock.release()
+
+
+def _write_upload_capped(upload: UploadFile, dest: Path) -> None:
+    """Copy an upload to disk, stopping once it passes the shot size cap."""
+    declared = getattr(upload, "size", None)
+    if declared is not None and int(declared) > MAX_SHOT_BYTES:
+        raise HTTPException(status_code=413, detail=shot_too_large_detail())
+    total = 0
+    with dest.open("wb") as out:
+        while True:
+            chunk = upload.file.read(_UPLOAD_CHUNK_BYTES)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_SHOT_BYTES:
+                raise HTTPException(status_code=413, detail=shot_too_large_detail())
+            out.write(chunk)
+    if total <= 0:
+        raise HTTPException(status_code=400, detail="Empty video upload.")
 
 DEFAULT_ONNX = REPO_ROOT / "models" / "youth_football_probe.onnx"
 
@@ -472,38 +519,46 @@ def _score_shot_file(
 
     if max_seconds <= 0 or max_seconds > 30:
         raise HTTPException(status_code=400, detail="max_seconds must be in (0, 30]")
+    coco = None
     try:
-        coco, fps, meta = video_to_coco17_opencv(
-            dest,
-            max_frames=120,
-            max_seconds=float(max_seconds),
+        try:
+            coco, fps, meta = video_to_coco17_opencv(
+                dest,
+                max_frames=120,
+                max_seconds=float(max_seconds),
+            )
+        except ShotClipLimitError as exc:
+            raise HTTPException(status_code=413, detail=exc.detail) from exc
+        except PoseModelMissingError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ImportError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        wh = meta.get("frame_wh") or [0, 0]
+        frame_wh = (int(wh[0]), int(wh[1])) if wh and wh[0] and wh[1] else None
+        opencv_meta = {
+            "version": meta.get("opencv_version"),
+            "pose_backend": meta.get("pose_backend"),
+            "frames_used": int(meta.get("frames") or coco.shape[0]),
+            "compliant": meta.get("opencv_compliant"),
+            "dnn_engine": meta.get("dnn_engine"),
+            "pinned": "5.0.0.93",
+        }
+        source = dict(source)
+        source["fps"] = fps
+        return _score_shot_response(
+            coco,
+            fps=fps,
+            image_quality=meta.get("quality"),
+            frame_wh=frame_wh,
+            opencv_meta=opencv_meta,
+            source=source,
         )
-    except PoseModelMissingError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except ImportError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    wh = meta.get("frame_wh") or [0, 0]
-    frame_wh = (int(wh[0]), int(wh[1])) if wh and wh[0] and wh[1] else None
-    opencv_meta = {
-        "version": meta.get("opencv_version"),
-        "pose_backend": meta.get("pose_backend"),
-        "frames_used": int(meta.get("frames") or coco.shape[0]),
-        "compliant": meta.get("opencv_compliant"),
-        "dnn_engine": meta.get("dnn_engine"),
-        "pinned": "5.0.0.93",
-    }
-    source = dict(source)
-    source["fps"] = fps
-    return _score_shot_response(
-        coco,
-        fps=fps,
-        image_quality=meta.get("quality"),
-        frame_wh=frame_wh,
-        opencv_meta=opencv_meta,
-        source=source,
-    )
+    finally:
+        # Keypoints are copied into the JSON result. Drop the array before
+        # the slot returns memory to the OS.
+        del coco
 
 
 def _analyze_shot_from_s3(s3_key: str, *, max_seconds: float) -> dict[str, Any]:
@@ -540,7 +595,8 @@ def analyze_shot(body: ShotAnalyzeRequest) -> dict[str, Any]:
     """
     s3_key = (body.s3_key or "").strip()
     if s3_key:
-        return _analyze_shot_from_s3(s3_key, max_seconds=body.max_seconds)
+        with _shot_video_slot():
+            return _analyze_shot_from_s3(s3_key, max_seconds=body.max_seconds)
     try:
         kps, topo = _load_keypoints_array(
             keypoints=body.keypoints,
@@ -568,6 +624,10 @@ async def analyze_shot_video(
 
     MediaPipe is not the primary backend. It runs only when the process has
     AIFC_ALLOW_MP_FALLBACK=1 and the ONNX pose file is missing.
+
+    One analysis runs at a time. A concurrent caller gets 429. Clips over
+    20 MB, 12 seconds, or 720p get 413. Pose runs frame by frame so the
+    decoded clip is not kept in RAM.
     """
     suffix = Path(file.filename or "clip.mp4").suffix.lower() or ".mp4"
     if suffix not in {".mp4", ".webm", ".mov", ".avi", ".mkv"}:
@@ -576,14 +636,17 @@ async def analyze_shot_video(
     tmp_dir = Path(tempfile.mkdtemp(prefix="aifc_shot_"))
     dest = tmp_dir / f"upload{suffix}"
     try:
-        with dest.open("wb") as out:
-            shutil.copyfileobj(file.file, out)
-        return _score_shot_file(
-            dest,
-            filename=file.filename,
-            max_seconds=float(max_seconds),
-            source={"type": "video", "filename": file.filename},
-        )
+        _write_upload_capped(file, dest)
+        # Score off the event loop so a second request can observe the lock
+        # and return 429 while this one is still inside OpenCV.
+        with _shot_video_slot():
+            return await asyncio.to_thread(
+                _score_shot_file,
+                dest,
+                filename=file.filename,
+                max_seconds=float(max_seconds),
+                source={"type": "video", "filename": file.filename},
+            )
     except HTTPException:
         raise
     except FileNotFoundError as exc:

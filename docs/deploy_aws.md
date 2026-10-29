@@ -77,8 +77,8 @@ Least privilege for that IAM user (GetObject covers HeadObject; ListBucket is no
 
 1. Rejects anything that is not `uploads/<file>` with a video suffix.
 2. If `SHOT_BUCKET` is unset, **503** before any AWS call.
-3. Imports boto3 and downloads the object (80 MB cap) with the default credential chain.
-4. Runs the same OpenCV 5 decode, quality gates, and DNN pose path as `POST /analyze/shot/video`.
+3. Imports boto3 and downloads the object (20 MB cap; clips longer than 12s or above 720p are rejected with 413) with the default credential chain.
+4. Runs the same OpenCV 5 decode, quality gates, and DNN pose path as `POST /analyze/shot/video`. Only one shot-video analysis runs at a time; a second caller gets 429.
 5. Returns `score`, `coaching_zh`, and `agent.next_action`. `source.type` is `s3`.
 
 Missing boto3 or OpenCV is **503** with an install hint. A missing object is **404**. The keypoint body is unchanged when `s3_key` is omitted.
